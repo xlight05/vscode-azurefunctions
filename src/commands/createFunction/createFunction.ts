@@ -19,6 +19,7 @@ import { createNewProjectInternal } from '../createNewProject/createNewProject';
 import { verifyAndPromptToCreateProject } from '../createNewProject/verifyIsProject';
 import { FunctionListStep } from './FunctionListStep';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
+import { isProjectDurable } from './verifyIsProjectDurable';
 
 /**
  * @deprecated Use AzureFunctionsExtensionApi.createFunction instead
@@ -64,9 +65,10 @@ export async function createFunctionInternal(context: IActionContext, options: a
     }
 
     const { language, languageModel, version } = await verifyInitForVSCode(context, projectPath, options.language, /* TODO: languageModel: */ undefined, options.version);
+    const isDurable: boolean = await isProjectDurable(language, projectPath);
 
     const projectTemplateKey: string | undefined = getWorkspaceSetting(projectTemplateKeySetting, projectPath);
-    const wizardContext: IFunctionWizardContext = Object.assign(context, options, { projectPath, workspacePath, workspaceFolder, version, language, languageModel, projectTemplateKey });
+    const wizardContext: IFunctionWizardContext = Object.assign(context, options, { projectPath, workspacePath, workspaceFolder, version, language, languageModel, projectTemplateKey, isDurable });
     const wizard: AzureWizard<IFunctionWizardContext> = new AzureWizard(wizardContext, {
         promptSteps: [await FunctionListStep.create(wizardContext, { templateId: options.templateId, functionSettings: options.functionSettings, isProjectWizard: false })]
     });
@@ -113,3 +115,4 @@ async function getWorkspaceFolder(context: IActionContext, options: api.ICreateF
 
     return folder;
 }
+
