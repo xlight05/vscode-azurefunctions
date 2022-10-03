@@ -61,7 +61,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         if (isV2PythonModel) {
             return {
                 // TODO: Title?
-                promptSteps: [ new PythonLocationStep(this._functionSettings) ]
+                promptSteps: [new PythonLocationStep(this._functionSettings)]
             };
         } else {
             return await FunctionSubWizard.createSubWizard(context, this._functionSettings);
@@ -117,7 +117,8 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         const templateProvider = ext.templateProvider.get(context);
         const templates: IFunctionTemplate[] = await templateProvider.getFunctionTemplates(context, context.projectPath, language, context.languageModel, version, templateFilter, context.projectTemplateKey);
         context.telemetry.measurements.templateCount = templates.length;
-        const picks: IAzureQuickPickItem<IFunctionTemplate | TemplatePromptResult>[] = templates
+        const expandedTemplates: IFunctionTemplate[] = expandDurableTemplatesIfNeeded(context, templates);
+        const picks: IAzureQuickPickItem<IFunctionTemplate | TemplatePromptResult>[] = expandedTemplates
             .sort((a, b) => sortTemplates(a, b, templateFilter))
             .map(t => { return { label: t.name, data: t }; });
 
@@ -204,4 +205,42 @@ function sortTemplates(a: IFunctionTemplate, b: IFunctionTemplate, templateFilte
     }
 
     return a.name.localeCompare(b.name);
+}
+
+/**
+ * If the existing project has no durable orchestrator, we will expand and show separate options for connecting to the different
+ * back-end storages
+ */
+function expandDurableTemplatesIfNeeded(context: IFunctionWizardContext, templates: IFunctionTemplate[]): IFunctionTemplate[] {
+    let expandedTemplates: IFunctionTemplate[] = [...templates];
+
+    if (nonNullProp(context, 'hasDurableOrchestrator')) {
+        return expandedTemplates;
+    }
+
+    const durableFunctionsRegExp = /\bDurableFunctions/i;
+    const durableOrchestratorRegExp = /\bDurableFunctionsOrchestrator/i;
+    let orchestrator: IFunctionTemplate;
+
+    expandedTemplates = expandedTemplates.filter(template => {
+        if (!durableFunctionsRegExp.test(template.id)) {
+            return true;
+        }
+        if (durableOrchestratorRegExp.test(template.id)) {
+            orchestrator = template;
+        }
+        return false;
+    });
+
+    const storageTemplateNames = [
+        'Durable Functions Orchestration using Storage',
+        'Durable Functions Orchestration using SQL',
+        'Durable Functions Orchestration using Netherite'
+    ];
+    const durableStorageTemplates = storageTemplateNames.map(name => {
+        return { ...orchestrator, name };
+    })
+
+    expandedTemplates.push(...durableStorageTemplates);
+    return expandedTemplates;
 }

@@ -7,7 +7,7 @@ import { AzExtFsExtra, nonNullProp } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
 import { ProjectLanguage } from "../../constants";
 
-// Use workspace dependencies as an indicator that this project has a durable orchestrator
+// Use workspace dependencies as an indicator to check whether this project already has a durable orchestrator
 export async function verifyHasDurableOrchestrator(language: string, projectPath: string): Promise<boolean> {
     switch (language) {
         case ProjectLanguage.JavaScript:
