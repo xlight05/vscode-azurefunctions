@@ -7,12 +7,12 @@ import { AzExtFsExtra, nonNullProp } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
 import { ProjectLanguage } from "../../constants";
 
-// Use workspace dependencies as an indicator that this is a durable functions project
-export async function isProjectDurable(language: string, projectPath: string): Promise<boolean> {
+// Use workspace dependencies as an indicator that this project has a durable orchestrator
+export async function verifyHasDurableOrchestrator(language: string, projectPath: string): Promise<boolean> {
     switch (language) {
         case ProjectLanguage.JavaScript:
         case ProjectLanguage.TypeScript:
-            return await isNodeProjectDurable(projectPath);
+            return await nodeHasDurableDependency(projectPath);
         case ProjectLanguage.CSharpScript:
         case ProjectLanguage.FSharpScript:
         case ProjectLanguage.PowerShell:
@@ -24,7 +24,7 @@ export async function isProjectDurable(language: string, projectPath: string): P
     }
 }
 
-async function isNodeProjectDurable(projectPath: string): Promise<boolean> {
+async function nodeHasDurableDependency(projectPath: string): Promise<boolean> {
     try {
         const dfPackageName: string = 'durable-functions';
         const packagePath: string = path.join(projectPath, 'package.json');

@@ -12,7 +12,7 @@ import { IProjectWizardContext } from "../createNewProject/IProjectWizardContext
 export interface IFunctionWizardContext extends Partial<ISubscriptionContext>, IProjectWizardContext {
     functionTemplate?: IFunctionTemplate;
     functionName?: string;
-    isDurable?: boolean;
+    hasDurableOrchestrator?: boolean;
 }
 
 export function setBindingSetting(context: IFunctionWizardContext, setting: IBindingSetting, value: BindingSettingValue): void {
