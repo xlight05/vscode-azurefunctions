@@ -12,7 +12,7 @@ export async function verifyHasDurableOrchestrator(language: string, projectPath
     switch (language) {
         case ProjectLanguage.JavaScript:
         case ProjectLanguage.TypeScript:
-            return await nodeHasDurableDependency(projectPath);
+            return await nodeProjectHasDurableDependency(projectPath);
         case ProjectLanguage.CSharpScript:
         case ProjectLanguage.FSharpScript:
         case ProjectLanguage.PowerShell:
@@ -24,7 +24,7 @@ export async function verifyHasDurableOrchestrator(language: string, projectPath
     }
 }
 
-async function nodeHasDurableDependency(projectPath: string): Promise<boolean> {
+async function nodeProjectHasDurableDependency(projectPath: string): Promise<boolean> {
     try {
         const dfPackageName: string = 'durable-functions';
         const packagePath: string = path.join(projectPath, 'package.json');
