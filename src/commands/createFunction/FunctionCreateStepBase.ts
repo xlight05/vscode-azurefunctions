@@ -86,6 +86,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
 
             if (context.durableStorageType === DurableBackend.Netherite) {
                 hostJson.extensions = {
+                    ...hostJson.extensions,
                     durableTask: {
                         hubName: "NetheriteHub",
                         useGracefulShutdown: true,
@@ -100,6 +101,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
                 localSettingsJson.Values = { ...localSettingsJson.Values, EventHubsConnection: "" };
             } else if (context.durableStorageType === DurableBackend.SQL) {
                 hostJson.extensions = {
+                    ...hostJson.extensions,
                     durableTask: {
                         storageProvider: {
                             type: "mssql",
