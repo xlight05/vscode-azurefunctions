@@ -80,6 +80,12 @@ export enum ScmType {
     GitHub = 'GitHub'
 }
 
+export enum DurableBackend {
+    Storage = 'Storage',
+    Netherite = 'Netherite',
+    SQL = "SQL"
+}
+
 export const func: string = 'func';
 export const extInstallCommand: string = 'extensions install';
 export const extInstallTaskName: string = `${func}: ${extInstallCommand}`;
@@ -96,7 +102,8 @@ export const localhost: string = '127.0.0.1';
 export const tsDefaultOutDir: string = 'dist';
 export const tsConfigFileName: string = 'tsconfig.json';
 
-export const localEmulatorConnectionString: string = 'UseDevelopmentStorage=true';
+export const localStorageEmulatorConnectionString: string = 'UseDevelopmentStorage=true';
+export const localEventHubEmulatorConnectionString: string = 'MemoryF';
 
 export const workerRuntimeKey: string = 'FUNCTIONS_WORKER_RUNTIME';
 export const workerRuntimeVersionKey: string = 'FUNCTIONS_WORKER_RUNTIME_VERSION';

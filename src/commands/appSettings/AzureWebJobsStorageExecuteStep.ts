@@ -5,7 +5,7 @@
 
 import { IStorageAccountWizardContext } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardExecuteStep } from '@microsoft/vscode-azext-utils';
-import { localEmulatorConnectionString } from '../../constants';
+import { localStorageEmulatorConnectionString } from '../../constants';
 import { azureWebJobsStorageKey, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getStorageConnectionString } from '../../utils/azure';
 import { IAzureWebJobsStorageWizardContext } from './IAzureWebJobsStorageWizardContext';
@@ -16,7 +16,7 @@ export class AzureWebJobsStorageExecuteStep<T extends IAzureWebJobsStorageWizard
     public async execute(context: IAzureWebJobsStorageWizardContext): Promise<void> {
         let value: string;
         if (context.azureWebJobsStorageType === 'emulator') {
-            value = localEmulatorConnectionString;
+            value = localStorageEmulatorConnectionString;
         } else {
             value = (await getStorageConnectionString(<IStorageAccountWizardContext>context)).connectionString;
         }

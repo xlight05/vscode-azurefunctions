@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ISubscriptionContext } from "@microsoft/vscode-azext-utils";
+import { DurableBackend } from "../../constants";
 import { BindingSettingValue } from "../../funcConfig/function";
 import { IBindingSetting } from "../../templates/IBindingTemplate";
 import { IFunctionTemplate } from "../../templates/IFunctionTemplate";
@@ -12,7 +13,10 @@ import { IProjectWizardContext } from "../createNewProject/IProjectWizardContext
 export interface IFunctionWizardContext extends Partial<ISubscriptionContext>, IProjectWizardContext {
     functionTemplate?: IFunctionTemplate;
     functionName?: string;
-    hasDurableOrchestrator?: boolean;
+
+    // Durable Functions
+    hasDurableOrchestrator?: boolean;  // Existing project already has a durable orchestrator
+    durableStorageType?: keyof typeof DurableBackend;  // Only defined for projects that do not yet have a durable orchestrator
 }
 
 export function setBindingSetting(context: IFunctionWizardContext, setting: IBindingSetting, value: BindingSettingValue): void {

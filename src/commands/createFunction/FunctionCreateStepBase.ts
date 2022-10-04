@@ -5,13 +5,17 @@
 
 import { AzExtFsExtra, AzureWizardExecuteStep, callWithTelemetryAndErrorHandling, IActionContext } from '@microsoft/vscode-azext-utils';
 import { Progress, Uri, window, workspace } from 'vscode';
+import { DurableBackend, hostFileName, localSettingsFileName } from '../../constants';
 import { ext } from '../../extensionVariables';
+import { IHostJsonV2 } from '../../funcConfig/host';
+import { ILocalSettingsJson } from '../../funcConfig/local.settings';
 import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
 import { nonNullProp } from '../../utils/nonNull';
 import { verifyExtensionBundle } from '../../utils/verifyExtensionBundle';
 import { getContainingWorkspace } from '../../utils/workspace';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
+import path = require('path');
 
 interface ICachedFunction {
     projectPath: string;
@@ -50,6 +54,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
         progress.report({ message: localize('creatingFunction', 'Creating new {0}...', template.name) });
 
         const newFilePath: string = await this.executeCore(context);
+        await this._configureDurableStorageIfNeeded(context);
         await verifyExtensionBundle(context, template);
 
         const cachedFunc: ICachedFunction = { projectPath: context.projectPath, newFilePath, isHttpTrigger: template.isHttpTrigger };
@@ -66,6 +71,53 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
 
     public shouldExecute(context: T): boolean {
         return !!context.functionTemplate;
+    }
+
+    private async _configureDurableStorageIfNeeded(context: T): Promise<void> {
+        if (!context.durableStorageType || context.durableStorageType === DurableBackend.Storage) {
+            return;
+        }
+
+        try {
+            const hostJsonPath: string = path.join(context.projectPath, hostFileName);
+            const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath) as IHostJsonV2;
+            const localSettingsPath: string = path.join(context.projectPath, localSettingsFileName);
+            const localSettingsJson: ILocalSettingsJson = await AzExtFsExtra.readJSON(localSettingsPath) as ILocalSettingsJson;
+
+            if (context.durableStorageType === DurableBackend.Netherite) {
+                hostJson.extensions = {
+                    durableTask: {
+                        hubName: "NetheriteHub",
+                        useGracefulShutdown: true,
+                        storageProvider: {
+                            type: "Netherite",
+                            partitionCount: 12,
+                            StorageConnectionName: "AzureWebJobsStorage",
+                            EventHubsConnectionName: "EventHubsConnection",
+                        }
+                    }
+                };
+                localSettingsJson.Values = { ...localSettingsJson.Values, EventHubsConnection: "" };
+            } else if (context.durableStorageType === DurableBackend.SQL) {
+                hostJson.extensions = {
+                    durableTask: {
+                        storageProvider: {
+                            type: "mssql",
+                            connectionStringName: "SQLDB_Connection",
+                            taskEventLockTimeout: "00:02:00",
+                            createDatabaseIfNotExists: true,
+                            schemaName: null
+                        }
+                    }
+                };
+                localSettingsJson.Values = { ...localSettingsJson.Values, SQLDB_Connection: "" };
+            }
+
+            await AzExtFsExtra.writeJSON(hostJsonPath, hostJson);
+            await AzExtFsExtra.writeJSON(localSettingsPath, localSettingsJson);
+        } catch (error) {
+            console.log(error);
+        }
     }
 }
 

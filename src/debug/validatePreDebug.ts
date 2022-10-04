@@ -12,7 +12,7 @@ import { AzureWebJobsStorageExecuteStep } from "../commands/appSettings/AzureWeb
 import { AzureWebJobsStoragePromptStep } from "../commands/appSettings/AzureWebJobsStoragePromptStep";
 import { IAzureWebJobsStorageWizardContext } from "../commands/appSettings/IAzureWebJobsStorageWizardContext";
 import { tryGetFunctionProjectRoot } from '../commands/createNewProject/verifyIsProject';
-import { functionJsonFileName, localEmulatorConnectionString, localSettingsFileName, ProjectLanguage, projectLanguageModelSetting, projectLanguageSetting, workerRuntimeKey } from "../constants";
+import { functionJsonFileName, localSettingsFileName, localStorageEmulatorConnectionString, ProjectLanguage, projectLanguageModelSetting, projectLanguageSetting, workerRuntimeKey } from "../constants";
 import { ParsedFunctionJson } from "../funcConfig/function";
 import { azureWebJobsStorageKey, getAzureWebJobsStorage, MismatchBehavior, setLocalAppSetting } from "../funcConfig/local.settings";
 import { getLocalFuncCoreToolsVersion } from '../funcCoreTools/getLocalFuncCoreToolsVersion';
@@ -173,7 +173,7 @@ async function validateAzureWebJobsStorage(context: IActionContext, projectLangu
  */
 async function validateEmulatorIsRunning(context: IActionContext, projectPath: string): Promise<boolean> {
     const azureWebJobsStorage: string | undefined = await getAzureWebJobsStorage(context, projectPath);
-    if (azureWebJobsStorage && azureWebJobsStorage.toLowerCase() === localEmulatorConnectionString.toLowerCase()) {
+    if (azureWebJobsStorage && azureWebJobsStorage.toLowerCase() === localStorageEmulatorConnectionString.toLowerCase()) {
         try {
             const client = BlobServiceClient.fromConnectionString(azureWebJobsStorage, { retryOptions: { maxTries: 1 } });
             await client.getProperties();

@@ -22,6 +22,13 @@ export interface IHostJsonV2 {
     };
     extensionBundle?: IBundleMetadata;
     extensions?: {
+        durableTask?: {
+            [key: string]: any;
+            storageProvider?: {
+                [key: string]: any;
+                type?: string;
+            }
+        };
         http?: {
             routePrefix?: string;
         };
