@@ -5,9 +5,11 @@
 
 import { AzExtFsExtra } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
-import { functionJsonFileName, ProjectLanguage } from '../../../constants';
+import { functionJsonFileName, npmInstallFailure, ProjectLanguage } from '../../../constants';
+import { ext } from '../../../extensionVariables';
 import { IFunctionBinding, IFunctionJson } from '../../../funcConfig/function';
 import { IScriptFunctionTemplate } from '../../../templates/script/parseScriptTemplates';
+import { cpUtils } from '../../../utils/cpUtils';
 import { nonNullProp } from '../../../utils/nonNull';
 import { FunctionCreateStepBase } from '../FunctionCreateStepBase';
 import { getBindingSetting } from '../IFunctionWizardContext';
@@ -54,9 +56,22 @@ export class ScriptFunctionCreateStep extends FunctionCreateStepBase<IScriptFunc
         const functionJsonPath: string = path.join(functionPath, functionJsonFileName);
         await AzExtFsExtra.writeJSON(functionJsonPath, functionJson);
 
+        await this._installDependenciesIfNeeded(context);
+
         const language: ProjectLanguage = nonNullProp(context, 'language');
         const fileName: string | undefined = getScriptFileNameFromLanguage(language);
         return fileName ? path.join(functionPath, fileName) : functionJsonPath;
+    }
+
+    private async _installDependenciesIfNeeded(context: IScriptFunctionWizardContext): Promise<void> {
+        try {
+            // Install Durable Functions dependency
+            if (context.durableStorageType) {
+                await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'npm', 'install', 'durable-functions');
+            }
+        } catch {
+            ext.outputChannel.appendLog(npmInstallFailure);
+        }
     }
 
     protected editFunctionJson?(context: IScriptFunctionWizardContext, functionJson: IFunctionJson): Promise<void>;

@@ -4,6 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzExtFsExtra, AzureWizardExecuteStep, callWithTelemetryAndErrorHandling, IActionContext } from '@microsoft/vscode-azext-utils';
+import * as path from 'path';
 import { Progress, Uri, window, workspace } from 'vscode';
 import { DurableBackend, hostFileName, localSettingsFileName } from '../../constants';
 import { ext } from '../../extensionVariables';
@@ -15,7 +16,6 @@ import { nonNullProp } from '../../utils/nonNull';
 import { verifyExtensionBundle } from '../../utils/verifyExtensionBundle';
 import { getContainingWorkspace } from '../../utils/workspace';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
-import path = require('path');
 
 interface ICachedFunction {
     projectPath: string;
@@ -116,7 +116,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
             await AzExtFsExtra.writeJSON(hostJsonPath, hostJson);
             await AzExtFsExtra.writeJSON(localSettingsPath, localSettingsJson);
         } catch (error) {
-            console.log(error);
+            ext.outputChannel.appendLog(localize('durableStorageConfigFailed', 'WARNING: Failed to configure your JSON files for durable storage, please configure them manually.'));
         }
     }
 }
