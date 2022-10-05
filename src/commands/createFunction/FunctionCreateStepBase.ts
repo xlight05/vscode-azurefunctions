@@ -87,15 +87,15 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
 
             switch (context.durableStorageType) {
                 case DurableBackend.Storage:
-                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getStorageHostTaskConfig() };
+                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultStorageTaskConfig() };
                     break;
                 case DurableBackend.Netherite:
-                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getNetheriteHostTaskConfig(context.partitionCount) };
-                    localSettingsJson.Values = { ...localSettingsJson.Values, EventHubsConnection: "" };
+                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultNetheriteTaskConfig(context.partitionCount) };
+                    localSettingsJson.Values = { ...localSettingsJson.Values, ...durableUtils.getDefaultNetheriteLsvConfig() };
                     break;
                 case DurableBackend.SQL:
-                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getSqlHostTaskConfig() };
-                    localSettingsJson.Values = { ...localSettingsJson.Values, SQLDB_Connection: "" };
+                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultSqlTaskConfig() };
+                    localSettingsJson.Values = { ...localSettingsJson.Values, ...durableUtils.getDefaultSqlLsvConfig() };
                     break;
                 default:
             }

@@ -76,8 +76,8 @@ export namespace durableUtils {
         }
     }
 
-    // !----- Host Task Configs -----
-    export function getStorageHostTaskConfig() {
+    // !----- Default Host Durable Task Configs -----
+    export function getDefaultStorageTaskConfig() {
         return {
             durableTask: {
                 storageProvider: {
@@ -87,7 +87,7 @@ export namespace durableUtils {
         };
     }
 
-    export function getNetheriteHostTaskConfig(partitionCount?: number) {
+    export function getDefaultNetheriteTaskConfig(partitionCount?: number) {
         return {
             durableTask: {
                 hubName: "NetheriteHub",
@@ -102,7 +102,7 @@ export namespace durableUtils {
         };
     }
 
-    export function getSqlHostTaskConfig() {
+    export function getDefaultSqlTaskConfig() {
         return {
             durableTask: {
                 storageProvider: {
@@ -114,5 +114,14 @@ export namespace durableUtils {
                 }
             }
         };
+    }
+
+    // !----- Default Local Settings Value (LSV) Configs -----
+    export function getDefaultNetheriteLsvConfig() {
+        return { EventHubsConnection: "" };
+    }
+
+    export function getDefaultSqlLsvConfig() {
+        return { SQLDB_Connection: "" };
     }
 }
