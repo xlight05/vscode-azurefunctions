@@ -115,4 +115,3 @@ async function getWorkspaceFolder(context: IActionContext, options: api.ICreateF
 
     return folder;
 }
-
