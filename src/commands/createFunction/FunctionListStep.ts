@@ -5,11 +5,12 @@
 
 import { AzureWizardPromptStep, IActionContext, IAzureQuickPickItem, IAzureQuickPickOptions, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import * as escape from 'escape-string-regexp';
-import { DurableBackend, JavaBuildTool, ProjectLanguage, TemplateFilter, templateFilterSetting } from '../../constants';
+import { durableStorageTemplateNames, JavaBuildTool, ProjectLanguage, TemplateFilter, templateFilterSetting } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { FuncVersion } from '../../FuncVersion';
 import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
+import { durableUtils } from '../../utils/durableUtils';
 import { nonNullProp } from '../../utils/nonNull';
 import { isPythonV2Plus } from '../../utils/pythonUtils';
 import { getWorkspaceSetting, updateWorkspaceSetting } from '../../vsCodeConfig/settings';
@@ -100,7 +101,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
                 context.telemetry.properties.reloaded = 'true';
             } else {
                 context.functionTemplate = result;
-                context.durableStorageType = getDurableStorageType(result.name);
+                context.durableStorageType = durableUtils.getStorageTypeFromName(result.name);
             }
         }
 
@@ -208,12 +209,6 @@ function sortTemplates(a: IFunctionTemplate, b: IFunctionTemplate, templateFilte
     return a.name.localeCompare(b.name);
 }
 
-const storageTemplateNames: string[] = [
-    'Durable Functions Orchestration using Storage',
-    'Durable Functions Orchestration using Netherite',
-    'Durable Functions Orchestration using SQL'
-];
-
 /**
  * If the existing project has no durable orchestrator, expand and show separate options for connecting to the different
  * back-end storages. Filter out durable activities and durable triggers until an orchestrator is set up
@@ -239,23 +234,10 @@ function expandDurableTemplatesIfNeeded(context: IFunctionWizardContext, templat
         return false;
     });
 
-    const durableStorageTemplates = storageTemplateNames.map(name => {
+    const durableStorageTemplates = durableStorageTemplateNames.map(name => {
         return { ...orchestrator, name };
     });
 
     expandedTemplates.push(...durableStorageTemplates);
     return expandedTemplates;
-}
-
-function getDurableStorageType(templateName: string): keyof typeof DurableBackend | undefined {
-    switch (templateName) {
-        case storageTemplateNames[0]:
-            return DurableBackend.Storage;
-        case storageTemplateNames[1]:
-            return DurableBackend.Netherite;
-        case storageTemplateNames[2]:
-            return DurableBackend.SQL;
-        default:
-            return undefined;
-    }
 }

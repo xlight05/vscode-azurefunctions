@@ -11,6 +11,7 @@ import { addLocalFuncTelemetry } from '../../funcCoreTools/getLocalFuncCoreTools
 import { FuncVersion } from '../../FuncVersion';
 import { localize } from '../../localize';
 import { LocalProjectTreeItem } from '../../tree/localProject/LocalProjectTreeItem';
+import { durableUtils } from '../../utils/durableUtils';
 import { getContainingWorkspace } from '../../utils/workspace';
 import * as api from '../../vscode-azurefunctions.api';
 import { getWorkspaceSetting } from '../../vsCodeConfig/settings';
@@ -19,7 +20,6 @@ import { createNewProjectInternal } from '../createNewProject/createNewProject';
 import { verifyAndPromptToCreateProject } from '../createNewProject/verifyIsProject';
 import { FunctionListStep } from './FunctionListStep';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
-import { verifyHasDurableOrchestrator } from './verifyHasDurableOrchestrator';
 
 /**
  * @deprecated Use AzureFunctionsExtensionApi.createFunction instead
@@ -65,7 +65,7 @@ export async function createFunctionInternal(context: IActionContext, options: a
     }
 
     const { language, languageModel, version } = await verifyInitForVSCode(context, projectPath, options.language, /* TODO: languageModel: */ undefined, options.version);
-    const hasDurableOrchestrator: boolean = await verifyHasDurableOrchestrator(language, projectPath);
+    const hasDurableOrchestrator: boolean = await durableUtils.verifyHasDurableOrchestrator(language, projectPath);
 
     const projectTemplateKey: string | undefined = getWorkspaceSetting(projectTemplateKeySetting, projectPath);
     const wizardContext: IFunctionWizardContext = Object.assign(context, options, { projectPath, workspacePath, workspaceFolder, version, language, languageModel, projectTemplateKey, hasDurableOrchestrator });

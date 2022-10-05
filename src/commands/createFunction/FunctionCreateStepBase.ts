@@ -12,6 +12,7 @@ import { IHostJsonV2 } from '../../funcConfig/host';
 import { ILocalSettingsJson } from '../../funcConfig/local.settings';
 import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
+import { durableUtils } from '../../utils/durableUtils';
 import { nonNullProp } from '../../utils/nonNull';
 import { verifyExtensionBundle } from '../../utils/verifyExtensionBundle';
 import { getContainingWorkspace } from '../../utils/workspace';
@@ -74,7 +75,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
     }
 
     private async _configureDurableStorageIfNeeded(context: T): Promise<void> {
-        if (!context.durableStorageType || context.durableStorageType === DurableBackend.Storage) {
+        if (!context.durableStorageType) {
             return;
         }
 
@@ -84,41 +85,25 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
             const localSettingsPath: string = path.join(context.projectPath, localSettingsFileName);
             const localSettingsJson: ILocalSettingsJson = await AzExtFsExtra.readJSON(localSettingsPath) as ILocalSettingsJson;
 
-            if (context.durableStorageType === DurableBackend.Netherite) {
-                hostJson.extensions = {
-                    ...hostJson.extensions,
-                    durableTask: {
-                        hubName: "NetheriteHub",
-                        useGracefulShutdown: true,
-                        storageProvider: {
-                            type: "Netherite",
-                            partitionCount: 12,
-                            StorageConnectionName: "AzureWebJobsStorage",
-                            EventHubsConnectionName: "EventHubsConnection",
-                        }
-                    }
-                };
-                localSettingsJson.Values = { ...localSettingsJson.Values, EventHubsConnection: "" };
-            } else if (context.durableStorageType === DurableBackend.SQL) {
-                hostJson.extensions = {
-                    ...hostJson.extensions,
-                    durableTask: {
-                        storageProvider: {
-                            type: "mssql",
-                            connectionStringName: "SQLDB_Connection",
-                            taskEventLockTimeout: "00:02:00",
-                            createDatabaseIfNotExists: true,
-                            schemaName: null
-                        }
-                    }
-                };
-                localSettingsJson.Values = { ...localSettingsJson.Values, SQLDB_Connection: "" };
+            switch (context.durableStorageType) {
+                case DurableBackend.Storage:
+                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getStorageHostTaskConfig() };
+                    break;
+                case DurableBackend.Netherite:
+                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getNetheriteHostTaskConfig(context.partitionCount) };
+                    localSettingsJson.Values = { ...localSettingsJson.Values, EventHubsConnection: "" };
+                    break;
+                case DurableBackend.SQL:
+                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getSqlHostTaskConfig() };
+                    localSettingsJson.Values = { ...localSettingsJson.Values, SQLDB_Connection: "" };
+                    break;
+                default:
             }
 
             await AzExtFsExtra.writeJSON(hostJsonPath, hostJson);
             await AzExtFsExtra.writeJSON(localSettingsPath, localSettingsJson);
         } catch (error) {
-            ext.outputChannel.appendLog(localize('durableStorageConfigFailed', 'WARNING: Failed to configure your JSON files for durable storage, please configure them manually.'));
+            ext.outputChannel.appendLog(localize('durableStorageConfigFailed', 'WARNING: Failed to configure your JSON files for durable storage, please configure them manually or start from a clean project.'));
         }
     }
 }

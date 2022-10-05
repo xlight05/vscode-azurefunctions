@@ -81,10 +81,16 @@ export enum ScmType {
 }
 
 export enum DurableBackend {
-    Storage = 'Storage',
+    Storage = 'AzureStorage',
     Netherite = 'Netherite',
     SQL = "SQL"
 }
+
+export const durableStorageTemplateNames: string[] = [
+    'Durable Functions Orchestration using Storage',
+    'Durable Functions Orchestration using Netherite',
+    'Durable Functions Orchestration using SQL'
+];
 
 export const func: string = 'func';
 export const extInstallCommand: string = 'extensions install';
