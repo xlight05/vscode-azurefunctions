@@ -114,7 +114,7 @@ export const tsDefaultOutDir: string = 'dist';
 export const tsConfigFileName: string = 'tsconfig.json';
 
 export const localStorageEmulatorConnectionString: string = 'UseDevelopmentStorage=true';
-export const localEventHubEmulatorConnectionString: string = 'MemoryF';
+export const localEventHubsEmulatorConnectionString: string = 'MemoryF';
 
 export const workerRuntimeKey: string = 'FUNCTIONS_WORKER_RUNTIME';
 export const workerRuntimeVersionKey: string = 'FUNCTIONS_WORKER_RUNTIME_VERSION';
