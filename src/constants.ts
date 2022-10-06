@@ -80,6 +80,11 @@ export enum ScmType {
     GitHub = 'GitHub'
 }
 
+export enum ConnectionType {
+    Azure = "Azure",
+    Emulator = 'Emulator'
+}
+
 export enum DurableBackend {
     Storage = 'AzureStorage',
     Netherite = 'Netherite',
@@ -122,6 +127,8 @@ export const viewOutput: string = localize('viewOutput', 'View Output');
 export const previewDescription: string = localize('preview', '(Preview)');
 export const pythonNewModelPreview: string = localize('pythonNewModelPreview', 'Python (Programming Model V2)');
 export const npmInstallFailure: string = localize('npmInstallFailure', 'WARNING: Failed to install packages in your workspace. Run "npm install" manually instead.');
+export const useEmulator: string = localize('userEmulator', 'Use Local Emulator');
+export const skipForNow: string = localize('skipForNow', 'Skip For Now');
 
 export const webProvider: string = 'Microsoft.Web';
 export const functionFilter = {

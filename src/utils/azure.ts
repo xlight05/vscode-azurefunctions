@@ -8,6 +8,7 @@ import { AppKind, IAppServiceWizardContext } from '@microsoft/vscode-azext-azure
 import { getResourceGroupFromId, IStorageAccountWizardContext, VerifyProvidersStep } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizard, AzureWizardExecuteStep, IActionContext, IAzureQuickPickItem } from '@microsoft/vscode-azext-utils';
 import { isArray } from 'util';
+import { IEventHubsConnectionWizardContext } from '../commands/appSettings/IEventHubsConnectionWizardContext';
 import { IFunctionAppWizardContext } from '../commands/createFunctionApp/IFunctionAppWizardContext';
 import { webProvider } from '../constants';
 import { localize } from '../localize';
@@ -63,6 +64,13 @@ export async function getStorageConnectionString(context: IStorageAccountWizardC
     return {
         name,
         connectionString: `DefaultEndpointsProtocol=https;AccountName=${name};AccountKey=${key};EndpointSuffix=${endpointSuffix}`
+    };
+}
+
+export async function getEventHubsConnectionString(_context: IEventHubsConnectionWizardContext): Promise<IResourceResult> {
+    return {
+        name: "placeholder",
+        connectionString: "placeholderString"
     };
 }
 

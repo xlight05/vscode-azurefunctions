@@ -18,6 +18,7 @@ export interface ILocalSettingsJson {
 }
 
 export const azureWebJobsStorageKey: string = 'AzureWebJobsStorage';
+export const eventHubsConnectionKey: string = 'EventHubsConnection';
 
 export async function getAzureWebJobsStorage(context: IActionContext, projectPath: string): Promise<string | undefined> {
     // func cli uses environment variable if it's defined on the machine, so no need to prompt

@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardExecuteStep, AzureWizardPromptStep, IWizardOptions } from '@microsoft/vscode-azext-utils';
-import { ProjectLanguage } from '../../constants';
+import { DurableBackend, ProjectLanguage } from '../../constants';
 import { canValidateAzureWebJobStorageOnDebug } from '../../debug/validatePreDebug';
 import { getAzureWebJobsStorage } from '../../funcConfig/local.settings';
 import { localize } from '../../localize';
@@ -13,6 +13,8 @@ import { isPythonV2Plus } from '../../utils/pythonUtils';
 import { addBindingSettingSteps } from '../addBinding/settingSteps/addBindingSettingSteps';
 import { AzureWebJobsStorageExecuteStep } from '../appSettings/AzureWebJobsStorageExecuteStep';
 import { AzureWebJobsStoragePromptStep } from '../appSettings/AzureWebJobsStoragePromptStep';
+import { EventHubsConnectionExecuteStep } from '../appSettings/EventHubsConnectionExecuteStep';
+import { EventHubsConnectionPromptStep } from '../appSettings/EventHubsConnectionPromptStep';
 import { JavaPackageNameStep } from '../createNewProject/javaSteps/JavaPackageNameStep';
 import { DotnetFunctionCreateStep } from './dotnetSteps/DotnetFunctionCreateStep';
 import { DotnetFunctionNameStep } from './dotnetSteps/DotnetFunctionNameStep';
@@ -86,7 +88,23 @@ export class FunctionSubWizard {
                     break;
             }
 
-            if ((!template.isHttpTrigger && !template.isSqlBindingTemplate) && !canValidateAzureWebJobStorageOnDebug(context.language) && !await getAzureWebJobsStorage(context, context.projectPath)) {
+            if (context.durableStorageType) {
+                switch (context.durableStorageType) {
+                    case DurableBackend.Netherite:
+                        // Event hubs namespace
+                        promptSteps.push(new EventHubsConnectionPromptStep());
+                        executeSteps.push(new EventHubsConnectionExecuteStep());
+                        break;
+                    case DurableBackend.SQL:
+                        // Sql server
+
+                        break;
+                    case DurableBackend.Storage:
+                    default:
+                }
+            }
+
+            if (context.durableStorageType || !template.isHttpTrigger && !template.isSqlBindingTemplate && !canValidateAzureWebJobStorageOnDebug(context.language) && !await getAzureWebJobsStorage(context, context.projectPath)) {
                 promptSteps.push(new AzureWebJobsStoragePromptStep());
                 executeSteps.push(new AzureWebJobsStorageExecuteStep());
             }
