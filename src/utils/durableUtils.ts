@@ -87,14 +87,14 @@ export namespace durableUtils {
         };
     }
 
-    export function getDefaultNetheriteTaskConfig(partitionCount?: number) {
+    export function getDefaultNetheriteTaskConfig() {
         return {
             durableTask: {
                 hubName: "NetheriteHub",
                 useGracefulShutdown: true,
                 storageProvider: {
                     type: "Netherite",
-                    partitionCount: partitionCount || 12,
+                    partitionCount: 12,
                     StorageConnectionName: "AzureWebJobsStorage",
                     EventHubsConnectionName: "EventHubsConnection",
                 }

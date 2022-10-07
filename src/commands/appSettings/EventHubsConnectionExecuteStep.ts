@@ -4,19 +4,18 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardExecuteStep } from '@microsoft/vscode-azext-utils';
-import { ConnectionType, localEventHubEmulatorConnectionString } from '../../constants';
+import { ConnectionType, localEventHubsEmulatorConnectionString } from '../../constants';
 import { eventHubsConnectionKey, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getEventHubsConnectionString } from '../../utils/azure';
-import { IAzureWebJobsStorageWizardContext } from './IAzureWebJobsStorageWizardContext';
 import { IEventHubsConnectionWizardContext } from './IEventHubsConnectionWizardContext';
 
 export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardExecuteStep<T> {
-    public priority: number = 210;
+    public priority: number = 240;
 
     public async execute(context: IEventHubsConnectionWizardContext): Promise<void> {
         let value: string;
         if (context.eventHubConnectionType === ConnectionType.Emulator) {
-            value = localEventHubEmulatorConnectionString;
+            value = localEventHubsEmulatorConnectionString;
         } else {
             value = (await getEventHubsConnectionString(context)).connectionString;
         }
@@ -24,7 +23,7 @@ export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizard
         await setLocalAppSetting(context, context.projectPath, eventHubsConnectionKey, value, MismatchBehavior.Overwrite);
     }
 
-    public shouldExecute(context: IAzureWebJobsStorageWizardContext): boolean {
-        return !!context.azureWebJobsStorageType;
+    public shouldExecute(context: IEventHubsConnectionWizardContext): boolean {
+        return !!context.eventHubConnectionType;
     }
 }

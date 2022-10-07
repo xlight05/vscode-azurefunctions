@@ -9,6 +9,13 @@ import { ConnectionType } from "../../constants";
 
 export interface IEventHubsConnectionWizardContext extends IActionContext, Partial<ISubscriptionContext> {
     projectPath: string;
+
+    // Connection Types
+    azureWebJobsStorageType?: typeof ConnectionType[keyof typeof ConnectionType];
     eventHubConnectionType?: typeof ConnectionType[keyof typeof ConnectionType];
+
+    // Event Hub
     eventHubsNamespace?: EHNamespace;
+    newEventHubNamespaceName?: string;
+    newEventHubName?: string;
 }

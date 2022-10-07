@@ -8,7 +8,7 @@ import { MessageItem } from 'vscode';
 import { ConnectionType, skipForNow, useEmulator } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
-import { EventHubsNamespaceListStep } from './EventHubsNamespaceListStep';
+import { EventHubsNamespaceListStep } from '../createFunction/durableSteps/EventHubsNamespaceListStep';
 import { IEventHubsConnectionWizardContext } from './IEventHubsConnectionWizardContext';
 
 export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
@@ -39,6 +39,9 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
     }
 
     public shouldPrompt(context: T): boolean {
+        if (context.azureWebJobsStorageType) {
+            context.eventHubConnectionType = context.azureWebJobsStorageType;
+        }
         return !context.eventHubConnectionType;
     }
 

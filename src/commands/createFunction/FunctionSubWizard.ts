@@ -91,13 +91,12 @@ export class FunctionSubWizard {
             if (context.durableStorageType) {
                 switch (context.durableStorageType) {
                     case DurableBackend.Netherite:
-                        // Event hubs namespace
                         promptSteps.push(new EventHubsConnectionPromptStep());
                         executeSteps.push(new EventHubsConnectionExecuteStep());
                         break;
                     case DurableBackend.SQL:
-                        // Sql server
-
+                        promptSteps.push();
+                        executeSteps.push();
                         break;
                     case DurableBackend.Storage:
                     default:
