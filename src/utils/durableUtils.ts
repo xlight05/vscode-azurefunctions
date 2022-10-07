@@ -11,9 +11,9 @@ import { IHostJsonV2 } from "../funcConfig/host";
 export namespace durableUtils {
     // !------ Get Storage Type From... ------
     export async function getStorageTypeFromWorkspace(language: string, projectPath: string): Promise<typeof DurableBackend[keyof typeof DurableBackend] | undefined> {
-        const hasDurableOrchestrator: boolean = await verifyHasDurableOrchestrator(language, projectPath);
+        const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
 
-        if (!hasDurableOrchestrator) {
+        if (!hasDurableStorage) {
             return;
         }
 
@@ -33,7 +33,7 @@ export namespace durableUtils {
         }
     }
 
-    export function getStorageTypeFromName(templateName: string): typeof DurableBackend[keyof typeof DurableBackend] | undefined {
+    export function getStorageTypeFromTemplateName(templateName: string): typeof DurableBackend[keyof typeof DurableBackend] | undefined {
         switch (templateName) {
             case durableStorageTemplateNames[0]:
                 return DurableBackend.Storage;
@@ -46,9 +46,9 @@ export namespace durableUtils {
         }
     }
 
-    // !------ Verify Durable Orchestrator/Dependencies ------
-    // Use workspace dependencies as an indicator to check whether this project already has a durable orchestrator
-    export async function verifyHasDurableOrchestrator(language: string, projectPath: string): Promise<boolean> {
+    // !------ Verify Durable Storage/Dependencies ------
+    // Use workspace dependencies as an indicator to check whether this project already has durable storage setup
+    export async function verifyHasDurableStorage(language: string, projectPath: string): Promise<boolean> {
         switch (language) {
             case ProjectLanguage.JavaScript:
             case ProjectLanguage.TypeScript:

@@ -101,7 +101,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
                 context.telemetry.properties.reloaded = 'true';
             } else {
                 context.functionTemplate = result;
-                context.durableStorageType = durableUtils.getStorageTypeFromName(result.name);
+                context.durableStorageType = durableUtils.getStorageTypeFromTemplateName(result.name);
             }
         }
 

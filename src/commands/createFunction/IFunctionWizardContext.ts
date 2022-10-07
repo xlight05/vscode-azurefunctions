@@ -15,9 +15,8 @@ export interface IFunctionWizardContext extends Partial<ISubscriptionContext>, I
     functionName?: string;
 
     // Durable Functions
-    hasDurableOrchestrator?: boolean;  // Does the existing project already have a durable orchestrator
+    hasDurableStorage?: boolean;  // Does the existing project already have a durable orchestrator
     durableStorageType?: typeof DurableBackend[keyof typeof DurableBackend];  // Only defined for projects that do not yet have a durable orchestrator
-    partitionCount?: number;  // Netherite only, default is 12
 }
 
 export function setBindingSetting(context: IFunctionWizardContext, setting: IBindingSetting, value: BindingSettingValue): void {

@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardExecuteStep } from '@microsoft/vscode-azext-utils';
-import { ConnectionType, localEventHubEmulatorConnectionString } from '../../constants';
+import { ConnectionType, localEventHubsEmulatorConnectionString } from '../../constants';
 import { eventHubsConnectionKey, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getEventHubsConnectionString } from '../../utils/azure';
 import { IAzureWebJobsStorageWizardContext } from './IAzureWebJobsStorageWizardContext';
@@ -16,7 +16,7 @@ export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizard
     public async execute(context: IEventHubsConnectionWizardContext): Promise<void> {
         let value: string;
         if (context.eventHubConnectionType === ConnectionType.Emulator) {
-            value = localEventHubEmulatorConnectionString;
+            value = localEventHubsEmulatorConnectionString;
         } else {
             value = (await getEventHubsConnectionString(context)).connectionString;
         }
