@@ -90,7 +90,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
                     hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultStorageTaskConfig() };
                     break;
                 case DurableBackend.Netherite:
-                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultNetheriteTaskConfig(context.partitionCount) };
+                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultNetheriteTaskConfig() };
                     localSettingsJson.Values = { ...localSettingsJson.Values, ...durableUtils.getDefaultNetheriteLsvConfig() };
                     break;
                 case DurableBackend.SQL:

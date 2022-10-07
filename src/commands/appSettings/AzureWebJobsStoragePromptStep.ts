@@ -24,7 +24,7 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
         const useEmulatorButton: MessageItem = { title: useEmulator };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
-        const message: string = localize('selectAzureWebJobsStorage', 'In order to debug, you must select a Storage Account for internal use by the Azure Functions runtime.');
+        const message: string = localize('selectAzureWebJobsStorage', 'In order to debug, you must select a storage account for internal use by the Azure Functions runtime.');
 
         const buttons: MessageItem[] = [selectStorageButton];
         if (process.platform === 'win32') {
@@ -45,7 +45,10 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
         context.telemetry.properties.azureWebJobsStorageType = context.azureWebJobsStorageType || skipForNow;
     }
 
-    public shouldPrompt(context: T): boolean {
+    public shouldPrompt(context: T & { eventHubConnectionType?: typeof ConnectionType[keyof typeof ConnectionType] }): boolean {
+        if (context.eventHubConnectionType) {
+            context.azureWebJobsStorageType = context.eventHubConnectionType;
+        }
         return !context.azureWebJobsStorageType;
     }
 
