@@ -9,9 +9,8 @@ import { AzureWizardPromptStep, IAzureQuickPickItem, IAzureQuickPickOptions, ISu
 import { localize } from '../../../localize';
 import { createEventHubClient } from '../../../utils/azureClients';
 import { IEventHubsConnectionWizardContext } from '../../appSettings/IEventHubsConnectionWizardContext';
-import { EventHubNamespaceCreateStep } from './EventHubNamespaceCreateStep';
-import { EventHubNamespaceNameStep } from './EventHubNamespaceNameStep';
-import { EventHubNameStep } from './EventHubNameStep';
+import { EventHubsNamespaceCreateStep } from './EventHubsNamespaceCreateStep';
+import { EventHubsNamespaceNameStep } from './EventHubsNamespaceNameStep';
 
 export class EventHubsNamespaceListStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
     public static async isNameAvailable<T extends IEventHubsConnectionWizardContext & ISubscriptionActionContext>(context: T, name: string): Promise<boolean> {
@@ -32,15 +31,14 @@ export class EventHubsNamespaceListStep<T extends IEventHubsConnectionWizardCont
     public async getSubWizard(context: T): Promise<IWizardOptions<T> | undefined> {
         if (!context.eventHubsNamespace) {
             const promptSteps: AzureWizardPromptStep<T & ISubscriptionActionContext>[] = [
-                new EventHubNamespaceNameStep(),
-                new EventHubNameStep(),
+                new EventHubsNamespaceNameStep(),
                 new ResourceGroupListStep()
             ];
             LocationListStep.addStep(context, promptSteps);
             return {
                 promptSteps: promptSteps,
                 executeSteps: [
-                    new EventHubNamespaceCreateStep()
+                    new EventHubsNamespaceCreateStep()
                 ]
             };
         } else {
