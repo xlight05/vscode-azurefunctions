@@ -5,23 +5,18 @@
 
 import { EHNamespace, EventHubManagementClient } from '@azure/arm-eventhub';
 import { LocationListStep, ResourceGroupListStep, uiUtils } from '@microsoft/vscode-azext-azureutils';
-import { AzureWizardPromptStep, IAzureQuickPickItem, IAzureQuickPickOptions, ISubscriptionActionContext, IWizardOptions, nonNullProp } from '@microsoft/vscode-azext-utils';
-import { localize } from '../../../localize';
-import { createEventHubClient } from '../../../utils/azureClients';
-import { IEventHubsConnectionWizardContext } from '../../appSettings/IEventHubsConnectionWizardContext';
+import { AzureWizardPromptStep, IAzureQuickPickItem, IAzureQuickPickOptions, ISubscriptionContext, IWizardOptions, nonNullProp } from '@microsoft/vscode-azext-utils';
+import { localize } from '../../../../localize';
+import { createEventHubClient } from '../../../../utils/azureClients';
+import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 import { EventHubsNamespaceCreateStep } from './EventHubsNamespaceCreateStep';
 import { EventHubsNamespaceNameStep } from './EventHubsNamespaceNameStep';
 
 export class EventHubsNamespaceListStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
-    public static async isNameAvailable<T extends IEventHubsConnectionWizardContext & ISubscriptionActionContext>(context: T, name: string): Promise<boolean> {
-        const client: EventHubManagementClient = await createEventHubClient(context);
-        return !!(await client.namespaces.checkNameAvailability({ name })).nameAvailable;
-    }
-
     public async prompt(context: T): Promise<void> {
-        const client: EventHubManagementClient = await createEventHubClient(<ISubscriptionActionContext>context);
+        const client: EventHubManagementClient = await createEventHubClient(<T & ISubscriptionContext>context);
 
-        const quickPickOptions: IAzureQuickPickOptions = { placeHolder: 'Select an event hub namespace.', id: `EventHubNamespaceListStep/${context.subscriptionId}` };
+        const quickPickOptions: IAzureQuickPickOptions = { placeHolder: 'Select an event hub namespace.' };
         const picksTask: Promise<IAzureQuickPickItem<EHNamespace | undefined>[]> = this.getQuickPicks(uiUtils.listAllIterator(client.namespaces.list()));
 
         const result: EHNamespace | undefined = (await context.ui.showQuickPick(picksTask, quickPickOptions)).data;
@@ -30,7 +25,7 @@ export class EventHubsNamespaceListStep<T extends IEventHubsConnectionWizardCont
 
     public async getSubWizard(context: T): Promise<IWizardOptions<T> | undefined> {
         if (!context.eventHubsNamespace) {
-            const promptSteps: AzureWizardPromptStep<T & ISubscriptionActionContext>[] = [
+            const promptSteps: AzureWizardPromptStep<T & ISubscriptionContext>[] = [
                 new EventHubsNamespaceNameStep(),
                 new ResourceGroupListStep()
             ];

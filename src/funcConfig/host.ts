@@ -3,6 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { DurableBackend } from "../constants";
 import { FuncVersion } from "../FuncVersion";
 
 export interface IHostJsonV2 {
@@ -22,17 +23,40 @@ export interface IHostJsonV2 {
     };
     extensionBundle?: IBundleMetadata;
     extensions?: {
-        durableTask?: {
-            [key: string]: any;
-            storageProvider?: {
-                [key: string]: any;
-                type?: string;
-            }
-        };
+        durableTask?: IDurableTaskJson;
         http?: {
             routePrefix?: string;
         };
     };
+}
+
+export type IDurableTaskJson = IStorageTaskJson | INetheriteTaskJson | ISqlTaskJson;
+
+export interface IStorageTaskJson {
+    storageProvider?: {
+        type?: DurableBackend.Storage;
+    }
+}
+
+export interface INetheriteTaskJson {
+    hubName?: string;
+    useGracefulShutdown?: boolean;
+    storageProvider?: {
+        type?: DurableBackend.Netherite;
+        partitionCount?: number;
+        StorageConnectionName?: string;
+        EventHubsConnectionName?: string;
+    }
+}
+
+export interface ISqlTaskJson {
+    storageProvider?: {
+        type?: DurableBackend.SQL;
+        connectionStringName?: string;
+        taskEventLockTimeout?: string;
+        createDatabaseIfNotExists?: boolean;
+        schemaName?: string | null;
+    }
 }
 
 export interface IBundleMetadata {

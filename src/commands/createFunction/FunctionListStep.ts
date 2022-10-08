@@ -216,7 +216,7 @@ function sortTemplates(a: IFunctionTemplate, b: IFunctionTemplate, templateFilte
 function expandDurableTemplatesIfNeeded(context: IFunctionWizardContext, templates: IFunctionTemplate[]): IFunctionTemplate[] {
     let expandedTemplates: IFunctionTemplate[] = [...templates];
 
-    if (context.hasDurableOrchestrator) {
+    if (context.hasDurableStorage) {
         return expandedTemplates;
     }
 

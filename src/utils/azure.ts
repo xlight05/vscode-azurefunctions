@@ -3,17 +3,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
+import { AccessKeys, EventHubManagementClient } from '@azure/arm-eventhub';
 import { StorageAccount, StorageAccountListKeysResult, StorageManagementClient } from '@azure/arm-storage';
 import { AppKind, IAppServiceWizardContext } from '@microsoft/vscode-azext-azureappservice';
 import { getResourceGroupFromId, IStorageAccountWizardContext, VerifyProvidersStep } from '@microsoft/vscode-azext-azureutils';
-import { AzureWizard, AzureWizardExecuteStep, IActionContext, IAzureQuickPickItem } from '@microsoft/vscode-azext-utils';
+import { AzureWizard, AzureWizardExecuteStep, IActionContext, IAzureQuickPickItem, ISubscriptionContext } from '@microsoft/vscode-azext-utils';
 import { isArray } from 'util';
 import { IEventHubsConnectionWizardContext } from '../commands/appSettings/IEventHubsConnectionWizardContext';
 import { IFunctionAppWizardContext } from '../commands/createFunctionApp/IFunctionAppWizardContext';
 import { webProvider } from '../constants';
 import { localize } from '../localize';
 import { ICreateFunctionAppContext, SubscriptionTreeItem } from '../tree/SubscriptionTreeItem';
-import { createStorageClient } from './azureClients';
+import { createEventHubClient, createStorageClient } from './azureClients';
 import { nonNullProp, nonNullValue } from './nonNull';
 
 export interface IBaseResourceWithName {
@@ -67,10 +68,16 @@ export async function getStorageConnectionString(context: IStorageAccountWizardC
     };
 }
 
-export async function getEventHubsConnectionString(_context: IEventHubsConnectionWizardContext): Promise<IResourceResult> {
+export async function getEventHubsConnectionString(context: IEventHubsConnectionWizardContext & ISubscriptionContext): Promise<IResourceResult> {
+    const client: EventHubManagementClient = await createEventHubClient(context);
+    const resourceGroupName: string = nonNullValue(context.resourceGroup?.name);
+    const namespaceName: string = nonNullValue(context.eventHubsNamespace?.name);
+    const authorizationRuleName: string = 'RootManageSharedAccessKey';
+
+    const accessKeys: AccessKeys = await client.namespaces.listKeys(resourceGroupName, namespaceName, authorizationRuleName);
     return {
-        name: "placeholder",
-        connectionString: "placeholderString"
+        name: namespaceName,
+        connectionString: accessKeys.primaryConnectionString || ""
     };
 }
 

@@ -19,8 +19,9 @@ import { JavaPackageNameStep } from '../createNewProject/javaSteps/JavaPackageNa
 import { DotnetFunctionCreateStep } from './dotnetSteps/DotnetFunctionCreateStep';
 import { DotnetFunctionNameStep } from './dotnetSteps/DotnetFunctionNameStep';
 import { DotnetNamespaceStep } from './dotnetSteps/DotnetNamespaceStep';
-import { EventHubNameStep } from './durableSteps/EventHubNameStep';
-import { EventHubPartitionsStep } from './durableSteps/EventHubPartitionsStep';
+import { EventHubNameStep } from './durableSteps/netherite/EventHubNameStep';
+import { EventHubPartitionsStep } from './durableSteps/netherite/EventHubPartitionsStep';
+import { NetheriteConfigureHostStep } from './durableSteps/netherite/NetheriteConfigureHostStep';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
 import { JavaFunctionCreateStep } from './javaSteps/JavaFunctionCreateStep';
 import { JavaFunctionNameStep } from './javaSteps/JavaFunctionNameStep';
@@ -94,7 +95,7 @@ export class FunctionSubWizard {
                 switch (context.durableStorageType) {
                     case DurableBackend.Netherite:
                         promptSteps.push(new EventHubsConnectionPromptStep(), new EventHubNameStep(), new EventHubPartitionsStep());
-                        executeSteps.push(new EventHubsConnectionExecuteStep());
+                        executeSteps.push(new EventHubsConnectionExecuteStep(), new NetheriteConfigureHostStep());
                         break;
                     case DurableBackend.SQL:
                         promptSteps.push();

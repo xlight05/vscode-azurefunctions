@@ -6,7 +6,8 @@
 import { AzExtFsExtra, nonNullProp } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
 import { DurableBackend, durableStorageTemplateNames, hostFileName, ProjectLanguage } from "../constants";
-import { IHostJsonV2 } from "../funcConfig/host";
+import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
+import { azureWebJobsStorageKey, eventHubsConnectionKey } from "../funcConfig/local.settings";
 
 export namespace durableUtils {
     // !------ Get Storage Type From... ------
@@ -19,7 +20,7 @@ export namespace durableUtils {
 
         const hostJsonPath = path.join(projectPath, hostFileName);
         const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
-        const hostStorageType: string | undefined = hostJson.extensions?.durableTask?.type;
+        const hostStorageType: typeof DurableBackend[keyof typeof DurableBackend] | undefined = hostJson.extensions?.durableTask?.storageProvider?.type;
 
         switch (hostStorageType) {
             case DurableBackend.Netherite:
@@ -77,51 +78,37 @@ export namespace durableUtils {
     }
 
     // !----- Default Host Durable Task Configs -----
-    export function getDefaultStorageTaskConfig() {
+    export function getDefaultStorageTaskConfig(): IStorageTaskJson {
         return {
-            durableTask: {
-                storageProvider: {
-                    type: "AzureStorage",
-                }
+            storageProvider: {
+                type: DurableBackend.Storage,
             }
         };
     }
 
-    export function getDefaultNetheriteTaskConfig() {
+
+    export function getDefaultNetheriteTaskConfig(hubName?: string, partitionCount?: number): INetheriteTaskJson {
         return {
-            durableTask: {
-                hubName: "NetheriteHub",
-                useGracefulShutdown: true,
-                storageProvider: {
-                    type: "Netherite",
-                    partitionCount: 12,
-                    StorageConnectionName: "AzureWebJobsStorage",
-                    EventHubsConnectionName: "EventHubsConnection",
-                }
+            hubName: hubName || "NetheriteHub",
+            useGracefulShutdown: true,
+            storageProvider: {
+                type: DurableBackend.Netherite,
+                partitionCount: partitionCount || 12,
+                StorageConnectionName: azureWebJobsStorageKey,
+                EventHubsConnectionName: eventHubsConnectionKey,
             }
         };
     }
 
-    export function getDefaultSqlTaskConfig() {
+    export function getDefaultSqlTaskConfig(): ISqlTaskJson {
         return {
-            durableTask: {
-                storageProvider: {
-                    type: "mssql",
-                    connectionStringName: "SQLDB_Connection",
-                    taskEventLockTimeout: "00:02:00",
-                    createDatabaseIfNotExists: true,
-                    schemaName: null
-                }
+            storageProvider: {
+                type: DurableBackend.SQL,
+                connectionStringName: "SQLDB_Connection",
+                taskEventLockTimeout: "00:02:00",
+                createDatabaseIfNotExists: true,
+                schemaName: null
             }
         };
-    }
-
-    // !----- Default Local Settings Value (LSV) Configs -----
-    export function getDefaultNetheriteLsvConfig() {
-        return { EventHubsConnection: "" };
-    }
-
-    export function getDefaultSqlLsvConfig() {
-        return { SQLDB_Connection: "" };
     }
 }

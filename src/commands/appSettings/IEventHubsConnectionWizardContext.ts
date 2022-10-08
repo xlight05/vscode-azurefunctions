@@ -17,8 +17,8 @@ export interface IEventHubsConnectionWizardContext extends IActionContext, Parti
     azureWebJobsStorageType?: typeof ConnectionType[keyof typeof ConnectionType];
     eventHubConnectionType?: typeof ConnectionType[keyof typeof ConnectionType];
 
-    // Event Hub
-    newEventHubNamespaceName?: string;
+    // Netherite
+    newEventHubsNamespaceName?: string;
     eventHubsNamespace?: EHNamespace;
     newEventHubName?: string;
     partitionCount?: number;

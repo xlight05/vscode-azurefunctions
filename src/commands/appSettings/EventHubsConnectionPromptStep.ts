@@ -8,7 +8,7 @@ import { MessageItem } from 'vscode';
 import { ConnectionType, skipForNow, useEmulator } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
-import { EventHubsNamespaceListStep } from '../createFunction/durableSteps/EventHubsNamespaceListStep';
+import { EventHubsNamespaceListStep } from '../createFunction/durableSteps/netherite/EventHubsNamespaceListStep';
 import { IEventHubsConnectionWizardContext } from './IEventHubsConnectionWizardContext';
 
 export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {

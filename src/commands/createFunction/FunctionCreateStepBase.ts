@@ -6,10 +6,10 @@
 import { AzExtFsExtra, AzureWizardExecuteStep, callWithTelemetryAndErrorHandling, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
 import { Progress, Uri, window, workspace } from 'vscode';
-import { DurableBackend, hostFileName, localSettingsFileName } from '../../constants';
+import { DurableBackend, hostFileName, hostJsonConfigFailed } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { IHostJsonV2 } from '../../funcConfig/host';
-import { ILocalSettingsJson } from '../../funcConfig/local.settings';
+import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
 import { durableUtils } from '../../utils/durableUtils';
@@ -55,7 +55,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
         progress.report({ message: localize('creatingFunction', 'Creating new {0}...', template.name) });
 
         const newFilePath: string = await this.executeCore(context);
-        await this._configureDurableStorageIfNeeded(context);
+        await this._configureForDurableStorageIfNeeded(context);
         await verifyExtensionBundle(context, template);
 
         const cachedFunc: ICachedFunction = { projectPath: context.projectPath, newFilePath, isHttpTrigger: template.isHttpTrigger };
@@ -74,7 +74,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
         return !!context.functionTemplate;
     }
 
-    private async _configureDurableStorageIfNeeded(context: T): Promise<void> {
+    private async _configureForDurableStorageIfNeeded(context: T): Promise<void> {
         if (!context.durableStorageType) {
             return;
         }
@@ -82,28 +82,26 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
         try {
             const hostJsonPath: string = path.join(context.projectPath, hostFileName);
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath) as IHostJsonV2;
-            const localSettingsPath: string = path.join(context.projectPath, localSettingsFileName);
-            const localSettingsJson: ILocalSettingsJson = await AzExtFsExtra.readJSON(localSettingsPath) as ILocalSettingsJson;
+            hostJson.extensions ??= {};
 
             switch (context.durableStorageType) {
                 case DurableBackend.Storage:
-                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultStorageTaskConfig() };
+                    hostJson.extensions.durableTask = durableUtils.getDefaultStorageTaskConfig();
                     break;
                 case DurableBackend.Netherite:
-                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultNetheriteTaskConfig() };
-                    localSettingsJson.Values = { ...localSettingsJson.Values, ...durableUtils.getDefaultNetheriteLsvConfig() };
+                    hostJson.extensions.durableTask = durableUtils.getDefaultNetheriteTaskConfig();
+                    setLocalAppSetting(context, context.projectPath, 'EventHubsConnection', '', MismatchBehavior.Overwrite);
                     break;
                 case DurableBackend.SQL:
-                    hostJson.extensions = { ...hostJson.extensions, ...durableUtils.getDefaultSqlTaskConfig() };
-                    localSettingsJson.Values = { ...localSettingsJson.Values, ...durableUtils.getDefaultSqlLsvConfig() };
+                    hostJson.extensions.durableTask = durableUtils.getDefaultSqlTaskConfig();
+                    setLocalAppSetting(context, context.projectPath, 'SQLDB_Connection', '', MismatchBehavior.Overwrite);
                     break;
                 default:
             }
 
             await AzExtFsExtra.writeJSON(hostJsonPath, hostJson);
-            await AzExtFsExtra.writeJSON(localSettingsPath, localSettingsJson);
         } catch (error) {
-            ext.outputChannel.appendLog(localize('durableStorageConfigFailed', 'WARNING: Failed to configure your JSON files for durable storage, please configure them manually or start from a clean project.'));
+            ext.outputChannel.appendLog(hostJsonConfigFailed);
         }
     }
 }

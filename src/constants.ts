@@ -88,7 +88,7 @@ export enum ConnectionType {
 export enum DurableBackend {
     Storage = 'AzureStorage',
     Netherite = 'Netherite',
-    SQL = "SQL"
+    SQL = "mssql"
 }
 
 export const durableStorageTemplateNames: string[] = [
@@ -127,8 +127,10 @@ export const viewOutput: string = localize('viewOutput', 'View Output');
 export const previewDescription: string = localize('preview', '(Preview)');
 export const pythonNewModelPreview: string = localize('pythonNewModelPreview', 'Python (Programming Model V2)');
 export const npmInstallFailure: string = localize('npmInstallFailure', 'WARNING: Failed to install packages in your workspace. Run "npm install" manually instead.');
+export const hostJsonConfigFailed: string = localize('durableStorageConfigFailed', 'WARNING: Failed to configure your JSON files for durable storage, you may need to configure them manually or start from a clean project.');
 export const useEmulator: string = localize('useEmulator', 'Use Local Emulator');
 export const skipForNow: string = localize('skipForNow', 'Skip For Now');
+export const recommended: string = localize('recommended', '(Recommended)');
 
 export const webProvider: string = 'Microsoft.Web';
 export const functionFilter = {

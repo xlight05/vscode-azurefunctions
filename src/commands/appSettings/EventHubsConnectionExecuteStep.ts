@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzureWizardExecuteStep } from '@microsoft/vscode-azext-utils';
+import { AzureWizardExecuteStep, ISubscriptionContext } from '@microsoft/vscode-azext-utils';
 import { ConnectionType, localEventHubsEmulatorConnectionString } from '../../constants';
 import { eventHubsConnectionKey, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getEventHubsConnectionString } from '../../utils/azure';
@@ -12,18 +12,18 @@ import { IEventHubsConnectionWizardContext } from './IEventHubsConnectionWizardC
 export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardExecuteStep<T> {
     public priority: number = 240;
 
-    public async execute(context: IEventHubsConnectionWizardContext): Promise<void> {
+    public async execute(context: T): Promise<void> {
         let value: string;
         if (context.eventHubConnectionType === ConnectionType.Emulator) {
             value = localEventHubsEmulatorConnectionString;
         } else {
-            value = (await getEventHubsConnectionString(context)).connectionString;
+            value = (await getEventHubsConnectionString(<T & ISubscriptionContext>context)).connectionString;
         }
 
         await setLocalAppSetting(context, context.projectPath, eventHubsConnectionKey, value, MismatchBehavior.Overwrite);
     }
 
-    public shouldExecute(context: IEventHubsConnectionWizardContext): boolean {
+    public shouldExecute(context: T): boolean {
         return !!context.eventHubConnectionType;
     }
 }
