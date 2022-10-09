@@ -74,8 +74,6 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         } else {
             return await FunctionSubWizard.createSubWizard(context, this._functionSettings);
         }
-
-
     }
 
     public async prompt(context: IFunctionWizardContext): Promise<void> {

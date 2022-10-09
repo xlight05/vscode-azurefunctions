@@ -91,19 +91,17 @@ export class FunctionSubWizard {
                     break;
             }
 
-            if (context.durableStorageType) {
-                switch (context.durableStorageType) {
-                    case DurableBackend.Netherite:
-                        promptSteps.push(new EventHubsConnectionPromptStep(), new EventHubNameStep(), new EventHubPartitionsStep());
-                        executeSteps.push(new EventHubsConnectionExecuteStep(), new NetheriteConfigureHostStep());
-                        break;
-                    case DurableBackend.SQL:
-                        promptSteps.push();
-                        executeSteps.push();
-                        break;
-                    case DurableBackend.Storage:
-                    default:
-                }
+            switch (context.durableStorageType) {
+                case DurableBackend.Netherite:
+                    promptSteps.push(new EventHubsConnectionPromptStep(), new EventHubNameStep(), new EventHubPartitionsStep());
+                    executeSteps.push(new EventHubsConnectionExecuteStep(), new NetheriteConfigureHostStep());
+                    break;
+                case DurableBackend.SQL:
+                    promptSteps.push();
+                    executeSteps.push();
+                    break;
+                case DurableBackend.Storage:
+                default:
             }
 
             if (context.durableStorageType || !template.isHttpTrigger && !template.isSqlBindingTemplate && !canValidateAzureWebJobStorageOnDebug(context.language) && !await getAzureWebJobsStorage(context, context.projectPath)) {
