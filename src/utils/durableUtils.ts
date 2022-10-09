@@ -3,14 +3,36 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzExtFsExtra, nonNullProp } from "@microsoft/vscode-azext-utils";
+import { AzExtFsExtra, IAzureQuickPickItem, nonNullProp } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
-import { DurableBackend, durableStorageTemplateNames, hostFileName, ProjectLanguage } from "../constants";
+import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
+import { DurableBackend, hostFileName, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { azureWebJobsStorageKey, eventHubsConnectionKey } from "../funcConfig/local.settings";
+import { localize } from "../localize";
 
 export namespace durableUtils {
-    // !------ Get Storage Type From... ------
+    export function requiresDurableStorage(templateId: string): boolean {
+        const durableOrchestrator: RegExp = /\bDurableFunctionsOrchestrator/i;
+        return durableOrchestrator.test(templateId);
+    }
+
+    export async function promptForStorageType(context: IFunctionWizardContext): Promise<typeof DurableBackend[keyof typeof DurableBackend]> {
+        const durableStorageOptions: string[] = [
+            'Durable Functions Orchestration using Storage',
+            'Durable Functions Orchestration using Netherite',
+            'Durable Functions Orchestration using SQL'
+        ];
+
+        const placeHolder: string = localize('chooseDurableStorageType', 'Choose a durable storage type.');
+        const picks: IAzureQuickPickItem<typeof DurableBackend[keyof typeof DurableBackend]>[] = [
+            { label: durableStorageOptions[0], data: DurableBackend.Storage },
+            { label: durableStorageOptions[1], data: DurableBackend.Netherite },
+            { label: durableStorageOptions[2], data: DurableBackend.SQL }
+        ];
+        return (await context.ui.showQuickPick(picks, { placeHolder })).data;
+    }
+
     export async function getStorageTypeFromWorkspace(language: string, projectPath: string): Promise<typeof DurableBackend[keyof typeof DurableBackend] | undefined> {
         const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
 
@@ -31,19 +53,6 @@ export namespace durableUtils {
             case DurableBackend.Storage:
             default:
                 return DurableBackend.Storage;
-        }
-    }
-
-    export function getStorageTypeFromTemplateName(templateName: string): typeof DurableBackend[keyof typeof DurableBackend] | undefined {
-        switch (templateName) {
-            case durableStorageTemplateNames[0]:
-                return DurableBackend.Storage;
-            case durableStorageTemplateNames[1]:
-                return DurableBackend.Netherite;
-            case durableStorageTemplateNames[2]:
-                return DurableBackend.SQL;
-            default:
-                return undefined;
         }
     }
 

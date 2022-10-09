@@ -5,7 +5,7 @@
 
 import { AzureWizardPromptStep, IActionContext, IAzureQuickPickItem, IAzureQuickPickOptions, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import * as escape from 'escape-string-regexp';
-import { durableStorageTemplateNames, JavaBuildTool, ProjectLanguage, TemplateFilter, templateFilterSetting } from '../../constants';
+import { JavaBuildTool, ProjectLanguage, TemplateFilter, templateFilterSetting } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { FuncVersion } from '../../FuncVersion';
 import { localize } from '../../localize';
@@ -59,6 +59,13 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
     public async getSubWizard(context: IFunctionWizardContext): Promise<IWizardOptions<IFunctionWizardContext> | undefined> {
         const isV2PythonModel = isPythonV2Plus(context.language, context.languageModel);
 
+        if (context.functionTemplate) {
+            const needsStorageSetup: boolean = durableUtils.requiresDurableStorage(context.functionTemplate.id) && !context.hasDurableStorage;
+            if (needsStorageSetup) {
+                context.durableStorageType = await durableUtils.promptForStorageType(context);
+            }
+        }
+
         if (isV2PythonModel) {
             return {
                 // TODO: Title?
@@ -67,6 +74,8 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         } else {
             return await FunctionSubWizard.createSubWizard(context, this._functionSettings);
         }
+
+
     }
 
     public async prompt(context: IFunctionWizardContext): Promise<void> {
@@ -101,7 +110,6 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
                 context.telemetry.properties.reloaded = 'true';
             } else {
                 context.functionTemplate = result;
-                context.durableStorageType = durableUtils.getStorageTypeFromTemplateName(result.name);
             }
         }
 
@@ -119,8 +127,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         const templateProvider = ext.templateProvider.get(context);
         const templates: IFunctionTemplate[] = await templateProvider.getFunctionTemplates(context, context.projectPath, language, context.languageModel, version, templateFilter, context.projectTemplateKey);
         context.telemetry.measurements.templateCount = templates.length;
-        const expandedTemplates: IFunctionTemplate[] = expandDurableTemplatesIfNeeded(context, templates);
-        const picks: IAzureQuickPickItem<IFunctionTemplate | TemplatePromptResult>[] = expandedTemplates
+        const picks: IAzureQuickPickItem<IFunctionTemplate | TemplatePromptResult>[] = templates
             .sort((a, b) => sortTemplates(a, b, templateFilter))
             .map(t => { return { label: t.name, data: t }; });
 
@@ -207,37 +214,4 @@ function sortTemplates(a: IFunctionTemplate, b: IFunctionTemplate, templateFilte
     }
 
     return a.name.localeCompare(b.name);
-}
-
-/**
- * If the existing project has no durable orchestrator, expand and show separate options for connecting to the different
- * back-end storages. Filter out durable activities and durable triggers until an orchestrator is set up
- */
-function expandDurableTemplatesIfNeeded(context: IFunctionWizardContext, templates: IFunctionTemplate[]): IFunctionTemplate[] {
-    let expandedTemplates: IFunctionTemplate[] = [...templates];
-
-    if (context.hasDurableStorage) {
-        return expandedTemplates;
-    }
-
-    const durableFunctionsRegExp = /\bDurableFunctions/i;
-    const durableOrchestratorRegExp = /\bDurableFunctionsOrchestrator/i;
-    let orchestrator: IFunctionTemplate;
-
-    expandedTemplates = expandedTemplates.filter(template => {
-        if (!durableFunctionsRegExp.test(template.id)) {
-            return true;
-        }
-        if (durableOrchestratorRegExp.test(template.id)) {
-            orchestrator = template;
-        }
-        return false;
-    });
-
-    const durableStorageTemplates = durableStorageTemplateNames.map(name => {
-        return { ...orchestrator, name };
-    });
-
-    expandedTemplates.push(...durableStorageTemplates);
-    return expandedTemplates;
 }
