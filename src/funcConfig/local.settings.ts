@@ -9,6 +9,7 @@ import * as vscode from 'vscode';
 import { ConnectionKeyValues, localSettingsFileName } from '../constants';
 import { localize } from '../localize';
 import { parseJson } from '../utils/parseJson';
+import { getWorkspaceRootPath } from '../utils/workspace';
 
 export interface ILocalSettingsJson {
     IsEncrypted?: boolean;
@@ -17,10 +18,16 @@ export interface ILocalSettingsJson {
     ConnectionStrings?: { [key: string]: string };
 }
 
-export async function getLocalConnectionString(context: IActionContext, projectPath: string, connectionKey: ConnectionKeyValues): Promise<string | undefined> {
+export async function getLocalConnectionString(context: IActionContext, connectionKey: ConnectionKeyValues, projectPath?: string): Promise<string | undefined> {
     // func cli uses environment variable if it's defined on the machine, so no need to prompt
     if (process.env[connectionKey]) {
         return process.env[connectionKey];
+    }
+
+    projectPath ??= getWorkspaceRootPath();
+
+    if (!projectPath) {
+        return;
     }
 
     const settings: ILocalSettingsJson = await getLocalSettingsJson(context, path.join(projectPath, localSettingsFileName));

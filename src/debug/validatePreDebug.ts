@@ -165,7 +165,7 @@ async function validateWorkerRuntime(context: IActionContext, projectLanguage: s
 
 async function validateAzureWebJobsStorage(context: IActionContext, projectLanguage: string | undefined, projectLanguageModel: number | undefined, projectPath: string): Promise<void> {
     if (canValidateAzureWebJobStorageOnDebug(projectLanguage)) {
-        const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, projectPath, ConnectionKey.Storage);
+        const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
         if (!azureWebJobsStorage) {
             const functionFolders: string[] = await getFunctionFolders(context, projectPath);
             const functions: ParsedFunctionJson[] = await Promise.all(functionFolders.map(async ff => {
@@ -192,7 +192,7 @@ async function validateNetheriteConnection(context: IActionContext, projectPath:
     const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
     const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
-    const eventHubsConnection: string | undefined = await getLocalConnectionString(context, projectPath, ConnectionKey.EventHub);
+    const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
     const eventHubName: string | undefined = await durableUtils.getNetheriteEventHubName(projectPath);
     const partitionCount: number | undefined = await durableUtils.getNetheritePartitionCount(projectPath);
 
@@ -222,7 +222,7 @@ async function validateNetheriteConnection(context: IActionContext, projectPath:
  * If AzureWebJobsStorage is set, pings the emulator to make sure it's actually running
  */
 async function validateEmulatorIsRunning(context: IActionContext, projectPath: string): Promise<boolean> {
-    const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, projectPath, ConnectionKey.Storage);
+    const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
     if (azureWebJobsStorage && azureWebJobsStorage.toLowerCase() === localStorageEmulatorConnectionString.toLowerCase()) {
         try {
             const client = BlobServiceClient.fromConnectionString(azureWebJobsStorage, { retryOptions: { maxTries: 1 } });

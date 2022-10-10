@@ -9,6 +9,7 @@ import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWiza
 import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { localize } from "../localize";
+import { getWorkspaceRootPath } from "./workspace";
 
 export namespace durableUtils {
     export function requiresDurableStorage(templateId: string): boolean {
@@ -32,7 +33,13 @@ export namespace durableUtils {
         return (await context.ui.showQuickPick(picks, { placeHolder })).data;
     }
 
-    export async function getStorageTypeFromWorkspace(language: string | undefined, projectPath: string): Promise<DurableBackendValues | undefined> {
+    export async function getStorageTypeFromWorkspace(language: string | undefined, projectPath?: string): Promise<DurableBackendValues | undefined> {
+        projectPath ??= getWorkspaceRootPath();
+
+        if (!projectPath) {
+            return;
+        }
+
         const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
         if (!hasDurableStorage) {
             return;
@@ -60,7 +67,13 @@ export namespace durableUtils {
 
     // !------ Verify Durable Storage/Dependencies ------
     // Use workspace dependencies as an indicator to check whether this project already has durable storage setup
-    export async function verifyHasDurableStorage(language: string | undefined, projectPath: string): Promise<boolean> {
+    export async function verifyHasDurableStorage(language: string | undefined, projectPath?: string): Promise<boolean> {
+        projectPath ??= getWorkspaceRootPath();
+
+        if (!projectPath) {
+            return false;
+        }
+
         switch (language) {
             case ProjectLanguage.JavaScript:
             case ProjectLanguage.TypeScript:
