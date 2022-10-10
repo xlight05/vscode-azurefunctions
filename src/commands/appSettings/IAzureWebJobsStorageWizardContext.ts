@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IActionContext, ISubscriptionContext } from "@microsoft/vscode-azext-utils";
-import { ConnectionType } from "../../constants";
+import { ConnectionTypeValues } from "../../constants";
 
 export interface IAzureWebJobsStorageWizardContext extends IActionContext, Partial<ISubscriptionContext> {
     projectPath: string;
-    azureWebJobsStorageType?: typeof ConnectionType[keyof typeof ConnectionType];
+    azureWebJobsStorageType?: ConnectionTypeValues;
 }

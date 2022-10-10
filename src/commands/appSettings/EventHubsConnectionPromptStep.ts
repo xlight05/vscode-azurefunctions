@@ -23,7 +23,11 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
 
         const message: string = localize('selectEventHubsConnection', 'In order to debug, you must select an Event Hub Namespace for internal use by the Azure Functions runtime.');
 
-        const buttons: MessageItem[] = [selectEventNamespaceButton, useEmulatorButton];
+        const buttons: MessageItem[] = [selectEventNamespaceButton];
+        if (process.platform === 'win32') {
+            // Only show on Windows until Azurite is officially supported: https://github.com/Azure/azure-functions-core-tools/issues/1247
+            buttons.push(useEmulatorButton);
+        }
         if (!this._suppressSkipForNow) {
             buttons.push(skipForNowButton);
         }
@@ -33,9 +37,11 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
             context.eventHubConnectionType = ConnectionType.Azure;
         } else if (result === useEmulatorButton) {
             context.eventHubConnectionType = ConnectionType.Emulator;
+        } else {
+            context.eventHubConnectionType = ConnectionType.Skip;
         }
 
-        context.telemetry.properties.eventHubConnectionType = context.eventHubConnectionType || skipForNow;
+        context.telemetry.properties.eventHubConnectionType = context.eventHubConnectionType;
     }
 
     public shouldPrompt(context: T): boolean {

@@ -6,7 +6,7 @@
 import { StorageAccountKind, StorageAccountListStep, StorageAccountPerformance, StorageAccountReplication } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardPromptStep, ISubscriptionActionContext, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import { MessageItem } from 'vscode';
-import { ConnectionType, skipForNow, useEmulator } from '../../constants';
+import { ConnectionType, ConnectionTypeValues, skipForNow, useEmulator } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
 import { IAzureWebJobsStorageWizardContext } from './IAzureWebJobsStorageWizardContext';
@@ -40,12 +40,14 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
             context.azureWebJobsStorageType = ConnectionType.Azure;
         } else if (result === useEmulatorButton) {
             context.azureWebJobsStorageType = ConnectionType.Emulator;
+        } else {
+            context.azureWebJobsStorageType = ConnectionType.Skip;
         }
 
-        context.telemetry.properties.azureWebJobsStorageType = context.azureWebJobsStorageType || skipForNow;
+        context.telemetry.properties.azureWebJobsStorageType = context.azureWebJobsStorageType;
     }
 
-    public shouldPrompt(context: T & { eventHubConnectionType?: typeof ConnectionType[keyof typeof ConnectionType] }): boolean {
+    public shouldPrompt(context: T & { eventHubConnectionType?: ConnectionTypeValues }): boolean {
         if (context.eventHubConnectionType) {
             context.azureWebJobsStorageType = context.eventHubConnectionType;
         }

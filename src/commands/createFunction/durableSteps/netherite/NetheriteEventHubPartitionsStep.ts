@@ -4,11 +4,11 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardPromptStep, IAzureQuickPickItem } from '@microsoft/vscode-azext-utils';
-import { recommended } from '../../../../constants';
+import { ConnectionType, recommended } from '../../../../constants';
 import { localize } from '../../../../localize';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 
-export class EventHubPartitionsStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
+export class NetheriteEventHubPartitionsStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
     public async prompt(context: T): Promise<void> {
         // Todo: verify the number of partition counts one can choose
         const placeHolder: string = localize('choosePartitionNumber', 'Choose the number of partitions.');
@@ -21,6 +21,6 @@ export class EventHubPartitionsStep<T extends IEventHubsConnectionWizardContext>
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.partitionCount;
+        return !context.partitionCount && context.eventHubConnectionType !== ConnectionType.Skip;
     }
 }

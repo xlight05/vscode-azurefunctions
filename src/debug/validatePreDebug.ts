@@ -4,21 +4,28 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { BlobServiceClient } from '@azure/storage-blob';
-import { AzExtFsExtra, AzureWizard, IActionContext, parseError } from "@microsoft/vscode-azext-utils";
+import { AzExtFsExtra, AzureWizard, AzureWizardExecuteStep, AzureWizardPromptStep, IActionContext, parseError } from "@microsoft/vscode-azext-utils";
 import * as path from 'path';
 import * as semver from 'semver';
 import * as vscode from 'vscode';
 import { AzureWebJobsStorageExecuteStep } from "../commands/appSettings/AzureWebJobsStorageExecuteStep";
 import { AzureWebJobsStoragePromptStep } from "../commands/appSettings/AzureWebJobsStoragePromptStep";
+import { EventHubsConnectionExecuteStep } from '../commands/appSettings/EventHubsConnectionExecuteStep';
+import { EventHubsConnectionPromptStep } from '../commands/appSettings/EventHubsConnectionPromptStep';
 import { IAzureWebJobsStorageWizardContext } from "../commands/appSettings/IAzureWebJobsStorageWizardContext";
+import { IEventHubsConnectionWizardContext } from '../commands/appSettings/IEventHubsConnectionWizardContext';
+import { NetheriteConfigureHostStep } from '../commands/createFunction/durableSteps/netherite/NetheriteConfigureHostStep';
+import { NetheriteEventHubNameStep } from '../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep';
+import { NetheriteEventHubPartitionsStep } from '../commands/createFunction/durableSteps/netherite/NetheriteEventHubPartitionsStep';
 import { tryGetFunctionProjectRoot } from '../commands/createNewProject/verifyIsProject';
-import { functionJsonFileName, localSettingsFileName, localStorageEmulatorConnectionString, ProjectLanguage, projectLanguageModelSetting, projectLanguageSetting, workerRuntimeKey } from "../constants";
+import { ConnectionKey, DurableBackend, functionJsonFileName, localSettingsFileName, localStorageEmulatorConnectionString, ProjectLanguage, projectLanguageModelSetting, projectLanguageSetting, workerRuntimeKey } from "../constants";
 import { ParsedFunctionJson } from "../funcConfig/function";
-import { azureWebJobsStorageKey, getAzureWebJobsStorage, MismatchBehavior, setLocalAppSetting } from "../funcConfig/local.settings";
+import { getLocalConnectionString, MismatchBehavior, setLocalAppSetting } from "../funcConfig/local.settings";
 import { getLocalFuncCoreToolsVersion } from '../funcCoreTools/getLocalFuncCoreToolsVersion';
 import { validateFuncCoreToolsInstalled } from '../funcCoreTools/validateFuncCoreToolsInstalled';
 import { localize } from '../localize';
 import { getFunctionFolders } from "../tree/localProject/LocalFunctionsTreeItem";
+import { durableUtils } from '../utils/durableUtils';
 import { isPythonV2Plus } from '../utils/pythonUtils';
 import { getDebugConfigs, isDebugConfigEqual } from '../vsCodeConfig/launch';
 import { getWorkspaceSetting, tryGetFunctionsWorkerRuntimeForProject } from "../vsCodeConfig/settings";
@@ -45,6 +52,7 @@ export async function preDebugValidate(context: IActionContext, debugConfig: vsc
             if (projectPath) {
                 const projectLanguage: string | undefined = getWorkspaceSetting(projectLanguageSetting, projectPath);
                 const projectLanguageModel: number | undefined = getWorkspaceSetting(projectLanguageModelSetting, projectPath);
+                const durableStorageType = await durableUtils.getStorageTypeFromWorkspace(projectLanguage, projectPath);
 
                 context.telemetry.properties.projectLanguage = projectLanguage;
                 context.telemetry.properties.projectLanguageModel = projectLanguageModel?.toString();
@@ -54,6 +62,17 @@ export async function preDebugValidate(context: IActionContext, debugConfig: vsc
 
                 context.telemetry.properties.lastValidateStep = 'workerRuntime';
                 await validateWorkerRuntime(context, projectLanguage, projectPath);
+
+                switch (durableStorageType) {
+                    case DurableBackend.Netherite:
+                        context.telemetry.properties.lastValidateStep = 'netheriteConnection';
+                        await validateNetheriteConnection(context, projectPath);
+                        break;
+                    case DurableBackend.SQL:
+                        break;
+                    case DurableBackend.Storage:
+                    default:
+                }
 
                 context.telemetry.properties.lastValidateStep = 'azureWebJobsStorage';
                 await validateAzureWebJobsStorage(context, projectLanguage, projectLanguageModel, projectPath);
@@ -146,7 +165,7 @@ async function validateWorkerRuntime(context: IActionContext, projectLanguage: s
 
 async function validateAzureWebJobsStorage(context: IActionContext, projectLanguage: string | undefined, projectLanguageModel: number | undefined, projectPath: string): Promise<void> {
     if (canValidateAzureWebJobStorageOnDebug(projectLanguage)) {
-        const azureWebJobsStorage: string | undefined = await getAzureWebJobsStorage(context, projectPath);
+        const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, projectPath, ConnectionKey.Storage);
         if (!azureWebJobsStorage) {
             const functionFolders: string[] = await getFunctionFolders(context, projectPath);
             const functions: ParsedFunctionJson[] = await Promise.all(functionFolders.map(async ff => {
@@ -168,17 +187,48 @@ async function validateAzureWebJobsStorage(context: IActionContext, projectLangu
     }
 }
 
+async function validateNetheriteConnection(context: IActionContext, projectPath: string): Promise<void> {
+    const wizardContext: IEventHubsConnectionWizardContext = { ...context, projectPath };
+    const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
+    const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
+
+    const eventHubsConnection: string | undefined = await getLocalConnectionString(context, projectPath, ConnectionKey.EventHub);
+    const eventHubName: string | undefined = await durableUtils.getNetheriteEventHubName(projectPath);
+    const partitionCount: number | undefined = await durableUtils.getNetheritePartitionCount(projectPath);
+
+    if (!eventHubsConnection) {
+        promptSteps.push(new EventHubsConnectionPromptStep(true /* suppressSkipForNow */));
+        executeSteps.push(new EventHubsConnectionExecuteStep());
+    }
+    if (!eventHubName) {
+        promptSteps.push(new NetheriteEventHubNameStep());
+    }
+    if (!partitionCount) {
+        promptSteps.push(new NetheriteEventHubPartitionsStep());
+    }
+
+    executeSteps.push(new NetheriteConfigureHostStep());
+
+    const wizard: AzureWizard<IEventHubsConnectionWizardContext> = new AzureWizard(wizardContext, {
+        promptSteps,
+        executeSteps
+    });
+
+    await wizard.prompt();
+    await wizard.execute();
+}
+
 /**
  * If AzureWebJobsStorage is set, pings the emulator to make sure it's actually running
  */
 async function validateEmulatorIsRunning(context: IActionContext, projectPath: string): Promise<boolean> {
-    const azureWebJobsStorage: string | undefined = await getAzureWebJobsStorage(context, projectPath);
+    const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, projectPath, ConnectionKey.Storage);
     if (azureWebJobsStorage && azureWebJobsStorage.toLowerCase() === localStorageEmulatorConnectionString.toLowerCase()) {
         try {
             const client = BlobServiceClient.fromConnectionString(azureWebJobsStorage, { retryOptions: { maxTries: 1 } });
             await client.getProperties();
         } catch (error) {
-            const message: string = localize('failedToConnectEmulator', 'Failed to verify "{0}" connection specified in "{1}". Is the local emulator installed and running?', azureWebJobsStorageKey, localSettingsFileName);
+            const message: string = localize('failedToConnectEmulator', 'Failed to verify "{0}" connection specified in "{1}". Is the local emulator installed and running?', ConnectionKey.Storage, localSettingsFileName);
             const learnMoreLink: string = process.platform === 'win32' ? 'https://aka.ms/AA4ym56' : 'https://aka.ms/AA4yef8';
             const debugAnyway: vscode.MessageItem = { title: localize('debugAnyway', 'Debug anyway') };
             const result: vscode.MessageItem = await context.ui.showWarningMessage(message, { learnMoreLink, modal: true, stepName: 'failedToConnectEmulator' }, debugAnyway);

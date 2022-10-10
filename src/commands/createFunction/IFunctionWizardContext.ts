@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ISubscriptionContext } from "@microsoft/vscode-azext-utils";
-import { DurableBackend } from "../../constants";
+import { DurableBackendValues } from "../../constants";
 import { BindingSettingValue } from "../../funcConfig/function";
 import { IBindingSetting } from "../../templates/IBindingTemplate";
 import { IFunctionTemplate } from "../../templates/IFunctionTemplate";
@@ -16,7 +16,7 @@ export interface IFunctionWizardContext extends Partial<ISubscriptionContext>, I
 
     // Durable Functions
     hasDurableStorage?: boolean;  // Does the existing project already have durable storage setup
-    durableStorageType?: typeof DurableBackend[keyof typeof DurableBackend];  // Only defined for projects that need a durable storage config added
+    durableStorageType?: DurableBackendValues;  // Only defined for projects that need a durable storage config added
 }
 
 export function setBindingSetting(context: IFunctionWizardContext, setting: IBindingSetting, value: BindingSettingValue): void {

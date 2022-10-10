@@ -4,9 +4,9 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardExecuteStep, AzureWizardPromptStep, IWizardOptions } from '@microsoft/vscode-azext-utils';
-import { DurableBackend, ProjectLanguage } from '../../constants';
+import { ConnectionKey, DurableBackend, ProjectLanguage } from '../../constants';
 import { canValidateAzureWebJobStorageOnDebug } from '../../debug/validatePreDebug';
-import { getAzureWebJobsStorage } from '../../funcConfig/local.settings';
+import { getLocalConnectionString } from '../../funcConfig/local.settings';
 import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
 import { isPythonV2Plus } from '../../utils/pythonUtils';
@@ -19,9 +19,9 @@ import { JavaPackageNameStep } from '../createNewProject/javaSteps/JavaPackageNa
 import { DotnetFunctionCreateStep } from './dotnetSteps/DotnetFunctionCreateStep';
 import { DotnetFunctionNameStep } from './dotnetSteps/DotnetFunctionNameStep';
 import { DotnetNamespaceStep } from './dotnetSteps/DotnetNamespaceStep';
-import { EventHubNameStep } from './durableSteps/netherite/EventHubNameStep';
-import { EventHubPartitionsStep } from './durableSteps/netherite/EventHubPartitionsStep';
 import { NetheriteConfigureHostStep } from './durableSteps/netherite/NetheriteConfigureHostStep';
+import { NetheriteEventHubNameStep } from './durableSteps/netherite/NetheriteEventHubNameStep';
+import { NetheriteEventHubPartitionsStep } from './durableSteps/netherite/NetheriteEventHubPartitionsStep';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
 import { JavaFunctionCreateStep } from './javaSteps/JavaFunctionCreateStep';
 import { JavaFunctionNameStep } from './javaSteps/JavaFunctionNameStep';
@@ -93,7 +93,7 @@ export class FunctionSubWizard {
 
             switch (context.durableStorageType) {
                 case DurableBackend.Netherite:
-                    promptSteps.push(new EventHubsConnectionPromptStep(), new EventHubNameStep(), new EventHubPartitionsStep());
+                    promptSteps.push(new EventHubsConnectionPromptStep(), new NetheriteEventHubNameStep(), new NetheriteEventHubPartitionsStep());
                     executeSteps.push(new EventHubsConnectionExecuteStep(), new NetheriteConfigureHostStep());
                     break;
                 case DurableBackend.SQL:
@@ -104,7 +104,7 @@ export class FunctionSubWizard {
                 default:
             }
 
-            if (context.durableStorageType || !template.isHttpTrigger && !template.isSqlBindingTemplate && !canValidateAzureWebJobStorageOnDebug(context.language) && !await getAzureWebJobsStorage(context, context.projectPath)) {
+            if (context.durableStorageType || !template.isHttpTrigger && !template.isSqlBindingTemplate && !canValidateAzureWebJobStorageOnDebug(context.language) && !await getLocalConnectionString(context, context.projectPath, ConnectionKey.Storage)) {
                 promptSteps.push(new AzureWebJobsStoragePromptStep());
                 executeSteps.push(new AzureWebJobsStorageExecuteStep());
             }

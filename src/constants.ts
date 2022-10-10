@@ -80,9 +80,16 @@ export enum ScmType {
     GitHub = 'GitHub'
 }
 
+export enum ConnectionKey {
+    Storage = 'AzureWebJobsStorage',
+    EventHub = 'EventHubsConnection',
+    SQL = 'SQLDB_Connection'
+}
+
 export enum ConnectionType {
     Azure = "Azure",
-    Emulator = 'Emulator'
+    Emulator = 'Emulator',
+    Skip = 'Skip'
 }
 
 export enum DurableBackend {
@@ -90,6 +97,10 @@ export enum DurableBackend {
     Netherite = 'Netherite',
     SQL = "mssql"
 }
+
+export type ConnectionKeyValues = typeof ConnectionKey[keyof typeof ConnectionKey];
+export type ConnectionTypeValues = typeof ConnectionType[keyof typeof ConnectionType];
+export type DurableBackendValues = typeof DurableBackend[keyof typeof DurableBackend];
 
 export const func: string = 'func';
 export const extInstallCommand: string = 'extensions install';

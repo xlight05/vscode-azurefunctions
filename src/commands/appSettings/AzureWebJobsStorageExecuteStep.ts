@@ -5,8 +5,8 @@
 
 import { IStorageAccountWizardContext } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardExecuteStep } from '@microsoft/vscode-azext-utils';
-import { ConnectionType, localStorageEmulatorConnectionString } from '../../constants';
-import { azureWebJobsStorageKey, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
+import { ConnectionKey, ConnectionType, localStorageEmulatorConnectionString } from '../../constants';
+import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getStorageConnectionString } from '../../utils/azure';
 import { IAzureWebJobsStorageWizardContext } from './IAzureWebJobsStorageWizardContext';
 
@@ -21,10 +21,10 @@ export class AzureWebJobsStorageExecuteStep<T extends IAzureWebJobsStorageWizard
             value = (await getStorageConnectionString(<IStorageAccountWizardContext>context)).connectionString;
         }
 
-        await setLocalAppSetting(context, context.projectPath, azureWebJobsStorageKey, value, MismatchBehavior.Overwrite);
+        await setLocalAppSetting(context, context.projectPath, ConnectionKey.Storage, value, MismatchBehavior.Overwrite);
     }
 
     public shouldExecute(context: IAzureWebJobsStorageWizardContext): boolean {
-        return !!context.azureWebJobsStorageType;
+        return !!context.azureWebJobsStorageType && context.azureWebJobsStorageType !== ConnectionType.Skip;
     }
 }

@@ -7,7 +7,7 @@ import { ext } from '@microsoft/vscode-azext-azureappservice/out/src/extensionVa
 import { AzExtFsExtra, AzureWizardExecuteStep, nonNullValue } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
 import { hostFileName, hostJsonConfigFailed } from '../../../../constants';
-import { IHostJsonV2 } from '../../../../funcConfig/host';
+import { IHostJsonV2, INetheriteTaskJson } from '../../../../funcConfig/host';
 import { durableUtils } from '../../../../utils/durableUtils';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 
@@ -19,10 +19,14 @@ export class NetheriteConfigureHostStep<T extends IEventHubsConnectionWizardCont
             const hostJsonPath: string = path.join(context.projectPath, hostFileName);
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath) as IHostJsonV2;
 
+            const durableTask = hostJson.extensions?.durableTask as INetheriteTaskJson ?? {};
+            const existingHubName: string | undefined = durableTask?.hubName;
+            const existingPartitionCount: number | undefined = durableTask?.storageProvider?.partitionCount;
+
             hostJson.extensions ??= {};
             hostJson.extensions.durableTask = durableUtils.getDefaultNetheriteTaskConfig(
-                nonNullValue(context.eventHubsNamespace?.name),
-                nonNullValue(context.partitionCount)
+                nonNullValue(context.newEventHubName || existingHubName),
+                nonNullValue(context.partitionCount || existingPartitionCount)
             );
 
             await AzExtFsExtra.writeJSON(hostJsonPath, hostJson);
@@ -32,6 +36,6 @@ export class NetheriteConfigureHostStep<T extends IEventHubsConnectionWizardCont
     }
 
     public shouldExecute(context: T): boolean {
-        return !!context.eventHubsNamespace?.name && !!context.partitionCount;
+        return !!context.newEventHubName || !!context.partitionCount;
     }
 }

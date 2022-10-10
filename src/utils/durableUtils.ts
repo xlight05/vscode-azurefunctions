@@ -6,9 +6,8 @@
 import { AzExtFsExtra, IAzureQuickPickItem, nonNullProp } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
-import { DurableBackend, hostFileName, ProjectLanguage } from "../constants";
+import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
-import { azureWebJobsStorageKey, eventHubsConnectionKey } from "../funcConfig/local.settings";
 import { localize } from "../localize";
 
 export namespace durableUtils {
@@ -17,7 +16,7 @@ export namespace durableUtils {
         return durableOrchestrator.test(templateId);
     }
 
-    export async function promptForStorageType(context: IFunctionWizardContext): Promise<typeof DurableBackend[keyof typeof DurableBackend]> {
+    export async function promptForStorageType(context: IFunctionWizardContext): Promise<DurableBackendValues> {
         const durableStorageOptions: string[] = [
             'Durable Functions Orchestration using Storage',
             'Durable Functions Orchestration using Netherite',
@@ -25,7 +24,7 @@ export namespace durableUtils {
         ];
 
         const placeHolder: string = localize('chooseDurableStorageType', 'Choose a durable storage type.');
-        const picks: IAzureQuickPickItem<typeof DurableBackend[keyof typeof DurableBackend]>[] = [
+        const picks: IAzureQuickPickItem<DurableBackendValues>[] = [
             { label: durableStorageOptions[0], data: DurableBackend.Storage },
             { label: durableStorageOptions[1], data: DurableBackend.Netherite },
             { label: durableStorageOptions[2], data: DurableBackend.SQL }
@@ -33,32 +32,35 @@ export namespace durableUtils {
         return (await context.ui.showQuickPick(picks, { placeHolder })).data;
     }
 
-    export async function getStorageTypeFromWorkspace(language: string, projectPath: string): Promise<typeof DurableBackend[keyof typeof DurableBackend] | undefined> {
+    export async function getStorageTypeFromWorkspace(language: string | undefined, projectPath: string): Promise<DurableBackendValues | undefined> {
         const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
-
         if (!hasDurableStorage) {
             return;
         }
 
-        const hostJsonPath = path.join(projectPath, hostFileName);
-        const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
-        const hostStorageType: typeof DurableBackend[keyof typeof DurableBackend] | undefined = hostJson.extensions?.durableTask?.storageProvider?.type;
+        try {
+            const hostJsonPath = path.join(projectPath, hostFileName);
+            const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
+            const hostStorageType: DurableBackendValues | undefined = hostJson.extensions?.durableTask?.storageProvider?.type;
 
-        switch (hostStorageType) {
-            case DurableBackend.Netherite:
-                return DurableBackend.Netherite;
-            case DurableBackend.SQL:
-                return DurableBackend.SQL;
-            // New DF's will use the more specific type 'DurableBackend.Storage', but legacy implementations may return this value as 'undefined'
-            case DurableBackend.Storage:
-            default:
-                return DurableBackend.Storage;
+            switch (hostStorageType) {
+                case DurableBackend.Netherite:
+                    return DurableBackend.Netherite;
+                case DurableBackend.SQL:
+                    return DurableBackend.SQL;
+                case DurableBackend.Storage:
+                default:
+                    // New DF's will use the more specific type 'DurableBackend.Storage', but legacy implementations may return this value as 'undefined'
+                    return DurableBackend.Storage;
+            }
+        } catch {
+            return;
         }
     }
 
     // !------ Verify Durable Storage/Dependencies ------
     // Use workspace dependencies as an indicator to check whether this project already has durable storage setup
-    export async function verifyHasDurableStorage(language: string, projectPath: string): Promise<boolean> {
+    export async function verifyHasDurableStorage(language: string | undefined, projectPath: string): Promise<boolean> {
         switch (language) {
             case ProjectLanguage.JavaScript:
             case ProjectLanguage.TypeScript:
@@ -86,6 +88,29 @@ export namespace durableUtils {
         }
     }
 
+    // !----- Get Netherite Config Params From host.json -----
+    export async function getNetheriteEventHubName(projectPath: string): Promise<string | undefined> {
+        try {
+            const hostJsonPath = path.join(projectPath, hostFileName);
+            const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
+            const taskJson: INetheriteTaskJson = hostJson.extensions?.durableTask as INetheriteTaskJson;
+            return taskJson?.hubName;
+        } catch {
+            return;
+        }
+    }
+
+    export async function getNetheritePartitionCount(projectPath: string): Promise<number | undefined> {
+        try {
+            const hostJsonPath = path.join(projectPath, hostFileName);
+            const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
+            const taskJson: INetheriteTaskJson = hostJson.extensions?.durableTask as INetheriteTaskJson;
+            return taskJson?.storageProvider?.partitionCount;
+        } catch {
+            return;
+        }
+    }
+
     // !----- Default Host Durable Task Configs -----
     export function getDefaultStorageTaskConfig(): IStorageTaskJson {
         return {
@@ -98,13 +123,13 @@ export namespace durableUtils {
 
     export function getDefaultNetheriteTaskConfig(hubName?: string, partitionCount?: number): INetheriteTaskJson {
         return {
-            hubName: hubName || "NetheriteHub",
+            hubName: hubName || "",
             useGracefulShutdown: true,
             storageProvider: {
                 type: DurableBackend.Netherite,
-                partitionCount: partitionCount || 12,
-                StorageConnectionName: azureWebJobsStorageKey,
-                EventHubsConnectionName: eventHubsConnectionKey,
+                partitionCount,
+                StorageConnectionName: ConnectionKey.Storage,
+                EventHubsConnectionName: ConnectionKey.EventHub,
             }
         };
     }
@@ -113,7 +138,7 @@ export namespace durableUtils {
         return {
             storageProvider: {
                 type: DurableBackend.SQL,
-                connectionStringName: "SQLDB_Connection",
+                connectionStringName: ConnectionKey.SQL,
                 taskEventLockTimeout: "00:02:00",
                 createDatabaseIfNotExists: true,
                 schemaName: null

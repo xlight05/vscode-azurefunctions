@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { EHNamespace, EventHubManagementClient } from '@azure/arm-eventhub';
-import { LocationListStep, ResourceGroupListStep, uiUtils } from '@microsoft/vscode-azext-azureutils';
-import { AzureWizardPromptStep, IAzureQuickPickItem, IAzureQuickPickOptions, ISubscriptionContext, IWizardOptions, nonNullProp } from '@microsoft/vscode-azext-utils';
+import { ResourceGroupListStep, uiUtils } from '@microsoft/vscode-azext-azureutils';
+import { AzureWizardExecuteStep, AzureWizardPromptStep, IAzureQuickPickItem, IAzureQuickPickOptions, ISubscriptionContext, IWizardOptions, nonNullProp } from '@microsoft/vscode-azext-utils';
 import { localize } from '../../../../localize';
 import { createEventHubClient } from '../../../../utils/azureClients';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
@@ -24,22 +24,19 @@ export class EventHubsNamespaceListStep<T extends IEventHubsConnectionWizardCont
     }
 
     public async getSubWizard(context: T): Promise<IWizardOptions<T> | undefined> {
-        if (!context.eventHubsNamespace) {
-            const promptSteps: AzureWizardPromptStep<T & ISubscriptionContext>[] = [
-                new EventHubsNamespaceNameStep(),
-                new ResourceGroupListStep()
-            ];
-            LocationListStep.addStep(context, promptSteps);
-            return {
-                promptSteps: promptSteps,
-                executeSteps: [
-                    new EventHubsNamespaceCreateStep()
-                ]
-            };
-        } else {
+        const promptSteps: AzureWizardPromptStep<T & ISubscriptionContext>[] = [];
+        const executeSteps: AzureWizardExecuteStep<T & ISubscriptionContext>[] = [];
+
+        if (context.eventHubsNamespace) {
             context.valuesToMask.push(nonNullProp(context.eventHubsNamespace, 'name'));
-            return undefined;
+        } else {
+            promptSteps.push(new EventHubsNamespaceNameStep());
+            executeSteps.push(new EventHubsNamespaceCreateStep());
         }
+
+        promptSteps.push(new ResourceGroupListStep());
+
+        return { promptSteps, executeSteps };
     }
 
     public shouldPrompt(context: T): boolean {
