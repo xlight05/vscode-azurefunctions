@@ -8,7 +8,7 @@ import { AzExtFsExtra, AzureWizardExecuteStep, nonNullValue } from '@microsoft/v
 import * as path from 'path';
 import { hostFileName, hostJsonConfigFailed } from '../../../../constants';
 import { IHostJsonV2, INetheriteTaskJson } from '../../../../funcConfig/host';
-import { durableUtils } from '../../../../utils/durableUtils';
+import { netheriteUtils } from '../../../../utils/durableUtils';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 
 export class NetheriteConfigureHostStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardExecuteStep<T> {
@@ -24,7 +24,7 @@ export class NetheriteConfigureHostStep<T extends IEventHubsConnectionWizardCont
             const existingPartitionCount: number | undefined = durableTask?.storageProvider?.partitionCount;
 
             hostJson.extensions ??= {};
-            hostJson.extensions.durableTask = durableUtils.getDefaultNetheriteTaskConfig(
+            hostJson.extensions.durableTask = netheriteUtils.getDefaultNetheriteTaskConfig(
                 nonNullValue(context.newEventHubName || existingHubName),
                 nonNullValue(context.partitionCount || existingPartitionCount)
             );

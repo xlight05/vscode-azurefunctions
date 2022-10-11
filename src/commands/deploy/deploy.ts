@@ -7,13 +7,14 @@ import { SiteConfigResource } from '@azure/arm-appservice';
 import { deploy as innerDeploy, getDeployFsPath, getDeployNode, IDeployContext, IDeployPaths, showDeployConfirmation } from '@microsoft/vscode-azext-azureappservice';
 import { DialogResponses, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
-import { deploySubpathSetting, functionFilter, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
+import { deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { addLocalFuncTelemetry } from '../../funcCoreTools/getLocalFuncCoreToolsVersion';
 import { localize } from '../../localize';
 import { ResolvedFunctionAppResource } from '../../tree/ResolvedFunctionAppResource';
 import { SlotTreeItem } from '../../tree/SlotTreeItem';
 import { dotnetUtils } from '../../utils/dotnetUtils';
+import { durableUtils, netheriteUtils } from '../../utils/durableUtils';
 import { isPathEqual } from '../../utils/fs';
 import { getWorkspaceSetting } from '../../vsCodeConfig/settings';
 import { verifyInitForVSCode } from '../../vsCodeConfig/verifyInitForVSCode';
@@ -48,6 +49,9 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
     context.telemetry.properties.projectRuntime = version;
     // TODO: telemetry for language model.
 
+    const durableStorageType: DurableBackendValues | undefined = await durableUtils.getStorageTypeFromWorkspace(language);
+    context.telemetry.properties.projectDurableStorageType = durableStorageType;
+
     if (language === ProjectLanguage.Python && !node.site.isLinux) {
         context.errorHandling.suppressReportIssue = true;
         throw new Error(localize('pythonNotAvailableOnWindows', 'Python projects are not supported on Windows Function Apps. Deploy to a Linux Function App instead.'));
@@ -73,6 +77,16 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         context.deployMethod = 'storage';
     }
 
+    switch (context.durableStorageType) {
+        case DurableBackend.Netherite:
+            await netheriteUtils.validateConnection(context);
+            break;
+        case DurableBackend.SQL:
+            break;
+        case DurableBackend.Storage:
+        default:
+    }
+
     if (getWorkspaceSetting<boolean>('showDeployConfirmation', context.workspaceFolder.uri.fsPath) && !context.isNewApp && isZipDeploy) {
         await showDeployConfirmation(context, node.site, 'azureFunctions.deploy');
     }
@@ -83,13 +97,13 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         void validateGlobSettings(context, context.effectiveDeployFsPath);
     }
 
-    if (language === ProjectLanguage.CSharp && !node.site.isLinux) {
+    if (language === ProjectLanguage.CSharp && !node.site.isLinux || context.durableStorageType) {
         await updateWorkerProcessTo64BitIfRequired(context, siteConfig, node, language);
     }
 
     if (isZipDeploy) {
         const projectPath = await tryGetFunctionProjectRoot(context, deployPaths.workspaceFolder);
-        await verifyAppSettings(context, node, projectPath, version, language, { doRemoteBuild, isConsumption });
+        await verifyAppSettings(context, node, projectPath, version, language, { doRemoteBuild, isConsumption }, durableStorageType);
     }
 
     await node.runWithTemporaryDescription(
@@ -117,6 +131,16 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
 }
 
 async function updateWorkerProcessTo64BitIfRequired(context: IDeployContext, siteConfig: SiteConfigResource, node: SlotTreeItem, language: ProjectLanguage): Promise<void> {
+    const client = await node.site.createClient(context);
+    const config: SiteConfigResource = {
+        use32BitWorkerProcess: false
+    };
+
+    if (context.durableStorageType) {
+        await client.updateConfiguration(config);
+        return;
+    }
+
     const functionProject: string | undefined = await tryGetFunctionProjectRoot(context, context.workspaceFolder);
     if (functionProject === undefined) {
         return;
@@ -133,10 +157,6 @@ async function updateWorkerProcessTo64BitIfRequired(context: IDeployContext, sit
         if (dialogResult === deployAnyway) {
             return;
         }
-        const config: SiteConfigResource = {
-            use32BitWorkerProcess: false
-        };
-        const client = await node.site.createClient(context);
         await client.updateConfiguration(config);
     }
 }

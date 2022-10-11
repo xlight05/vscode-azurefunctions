@@ -4,19 +4,13 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { BlobServiceClient } from '@azure/storage-blob';
-import { AzExtFsExtra, AzureWizard, AzureWizardExecuteStep, AzureWizardPromptStep, IActionContext, parseError } from "@microsoft/vscode-azext-utils";
+import { AzExtFsExtra, AzureWizard, IActionContext, parseError } from "@microsoft/vscode-azext-utils";
 import * as path from 'path';
 import * as semver from 'semver';
 import * as vscode from 'vscode';
 import { AzureWebJobsStorageExecuteStep } from "../commands/appSettings/AzureWebJobsStorageExecuteStep";
 import { AzureWebJobsStoragePromptStep } from "../commands/appSettings/AzureWebJobsStoragePromptStep";
-import { EventHubsConnectionExecuteStep } from '../commands/appSettings/EventHubsConnectionExecuteStep';
-import { EventHubsConnectionPromptStep } from '../commands/appSettings/EventHubsConnectionPromptStep';
 import { IAzureWebJobsStorageWizardContext } from "../commands/appSettings/IAzureWebJobsStorageWizardContext";
-import { IEventHubsConnectionWizardContext } from '../commands/appSettings/IEventHubsConnectionWizardContext';
-import { NetheriteConfigureHostStep } from '../commands/createFunction/durableSteps/netherite/NetheriteConfigureHostStep';
-import { NetheriteEventHubNameStep } from '../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep';
-import { NetheriteEventHubPartitionsStep } from '../commands/createFunction/durableSteps/netherite/NetheriteEventHubPartitionsStep';
 import { tryGetFunctionProjectRoot } from '../commands/createNewProject/verifyIsProject';
 import { ConnectionKey, DurableBackend, functionJsonFileName, localSettingsFileName, localStorageEmulatorConnectionString, ProjectLanguage, projectLanguageModelSetting, projectLanguageSetting, workerRuntimeKey } from "../constants";
 import { ParsedFunctionJson } from "../funcConfig/function";
@@ -25,7 +19,7 @@ import { getLocalFuncCoreToolsVersion } from '../funcCoreTools/getLocalFuncCoreT
 import { validateFuncCoreToolsInstalled } from '../funcCoreTools/validateFuncCoreToolsInstalled';
 import { localize } from '../localize';
 import { getFunctionFolders } from "../tree/localProject/LocalFunctionsTreeItem";
-import { durableUtils } from '../utils/durableUtils';
+import { durableUtils, netheriteUtils } from '../utils/durableUtils';
 import { isPythonV2Plus } from '../utils/pythonUtils';
 import { getDebugConfigs, isDebugConfigEqual } from '../vsCodeConfig/launch';
 import { getWorkspaceSetting, tryGetFunctionsWorkerRuntimeForProject } from "../vsCodeConfig/settings";
@@ -66,7 +60,7 @@ export async function preDebugValidate(context: IActionContext, debugConfig: vsc
                 switch (durableStorageType) {
                     case DurableBackend.Netherite:
                         context.telemetry.properties.lastValidateStep = 'netheriteConnection';
-                        await validateNetheriteConnection(context, projectPath);
+                        await netheriteUtils.validateConnection(context, projectPath);
                         break;
                     case DurableBackend.SQL:
                         break;
@@ -185,37 +179,6 @@ async function validateAzureWebJobsStorage(context: IActionContext, projectLangu
             }
         }
     }
-}
-
-async function validateNetheriteConnection(context: IActionContext, projectPath: string): Promise<void> {
-    const wizardContext: IEventHubsConnectionWizardContext = { ...context, projectPath };
-    const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
-    const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
-
-    const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
-    const eventHubName: string | undefined = await durableUtils.getNetheriteEventHubName(projectPath);
-    const partitionCount: number | undefined = await durableUtils.getNetheritePartitionCount(projectPath);
-
-    if (!eventHubsConnection) {
-        promptSteps.push(new EventHubsConnectionPromptStep(true /* suppressSkipForNow */));
-        executeSteps.push(new EventHubsConnectionExecuteStep());
-    }
-    if (!eventHubName) {
-        promptSteps.push(new NetheriteEventHubNameStep());
-    }
-    if (!partitionCount) {
-        promptSteps.push(new NetheriteEventHubPartitionsStep());
-    }
-
-    executeSteps.push(new NetheriteConfigureHostStep());
-
-    const wizard: AzureWizard<IEventHubsConnectionWizardContext> = new AzureWizard(wizardContext, {
-        promptSteps,
-        executeSteps
-    });
-
-    await wizard.prompt();
-    await wizard.execute();
 }
 
 /**

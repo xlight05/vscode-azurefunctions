@@ -12,7 +12,7 @@ import { IHostJsonV2 } from '../../funcConfig/host';
 import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
-import { durableUtils } from '../../utils/durableUtils';
+import { durableUtils, netheriteUtils, sqlUtils } from '../../utils/durableUtils';
 import { nonNullProp } from '../../utils/nonNull';
 import { verifyExtensionBundle } from '../../utils/verifyExtensionBundle';
 import { getContainingWorkspace } from '../../utils/workspace';
@@ -89,11 +89,11 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
                     hostJson.extensions.durableTask = durableUtils.getDefaultStorageTaskConfig();
                     break;
                 case DurableBackend.Netherite:
-                    hostJson.extensions.durableTask = durableUtils.getDefaultNetheriteTaskConfig();
+                    hostJson.extensions.durableTask = netheriteUtils.getDefaultNetheriteTaskConfig();
                     setLocalAppSetting(context, context.projectPath, 'EventHubsConnection', '', MismatchBehavior.Overwrite);
                     break;
                 case DurableBackend.SQL:
-                    hostJson.extensions.durableTask = durableUtils.getDefaultSqlTaskConfig();
+                    hostJson.extensions.durableTask = sqlUtils.getDefaultSqlTaskConfig();
                     setLocalAppSetting(context, context.projectPath, 'SQLDB_Connection', '', MismatchBehavior.Overwrite);
                     break;
                 default:

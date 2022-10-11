@@ -3,11 +3,18 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzExtFsExtra, IAzureQuickPickItem, nonNullProp } from "@microsoft/vscode-azext-utils";
+import { AzExtFsExtra, AzureWizard, AzureWizardExecuteStep, AzureWizardPromptStep, IActionContext, IAzureQuickPickItem, nonNullProp } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
+import { EventHubsConnectionExecuteStep } from "../commands/appSettings/EventHubsConnectionExecuteStep";
+import { EventHubsConnectionPromptStep } from "../commands/appSettings/EventHubsConnectionPromptStep";
+import { IEventHubsConnectionWizardContext } from "../commands/appSettings/IEventHubsConnectionWizardContext";
+import { NetheriteConfigureHostStep } from "../commands/createFunction/durableSteps/netherite/NetheriteConfigureHostStep";
+import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep";
+import { NetheriteEventHubPartitionsStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubPartitionsStep";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
 import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
+import { getLocalConnectionString } from "../funcConfig/local.settings";
 import { localize } from "../localize";
 import { getWorkspaceRootPath } from "./workspace";
 
@@ -101,8 +108,17 @@ export namespace durableUtils {
         }
     }
 
-    // !----- Get Netherite Config Params From host.json -----
-    export async function getNetheriteEventHubName(projectPath: string): Promise<string | undefined> {
+    export function getDefaultStorageTaskConfig(): IStorageTaskJson {
+        return {
+            storageProvider: {
+                type: DurableBackend.Storage,
+            }
+        };
+    }
+}
+
+export namespace netheriteUtils {
+    export async function getEventHubName(projectPath: string): Promise<string | undefined> {
         try {
             const hostJsonPath = path.join(projectPath, hostFileName);
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
@@ -113,7 +129,7 @@ export namespace durableUtils {
         }
     }
 
-    export async function getNetheritePartitionCount(projectPath: string): Promise<number | undefined> {
+    export async function getPartitionCount(projectPath: string): Promise<number | undefined> {
         try {
             const hostJsonPath = path.join(projectPath, hostFileName);
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
@@ -124,15 +140,42 @@ export namespace durableUtils {
         }
     }
 
-    // !----- Default Host Durable Task Configs -----
-    export function getDefaultStorageTaskConfig(): IStorageTaskJson {
-        return {
-            storageProvider: {
-                type: DurableBackend.Storage,
-            }
-        };
-    }
+    export async function validateConnection(context: IActionContext, projectPath?: string): Promise<void> {
+        projectPath ??= getWorkspaceRootPath();
 
+        if (!projectPath) {
+            throw new Error(localize('emptyWorkspace', 'Your workspace folder looks empty, please navigate to the root directory of your project.'));
+        }
+
+        const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
+        const eventHubName: string | undefined = await getEventHubName(projectPath);
+        const partitionCount: number | undefined = await getPartitionCount(projectPath);
+
+        const wizardContext: IEventHubsConnectionWizardContext = { ...context, projectPath };
+        const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
+        const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
+
+        if (!eventHubsConnection) {
+            promptSteps.push(new EventHubsConnectionPromptStep(true /* suppressSkipForNow */));
+            executeSteps.push(new EventHubsConnectionExecuteStep());
+        }
+        if (!eventHubName) {
+            promptSteps.push(new NetheriteEventHubNameStep());
+        }
+        if (!partitionCount) {
+            promptSteps.push(new NetheriteEventHubPartitionsStep());
+        }
+
+        executeSteps.push(new NetheriteConfigureHostStep());
+
+        const wizard: AzureWizard<IEventHubsConnectionWizardContext> = new AzureWizard(wizardContext, {
+            promptSteps,
+            executeSteps
+        });
+
+        await wizard.prompt();
+        await wizard.execute();
+    }
 
     export function getDefaultNetheriteTaskConfig(hubName?: string, partitionCount?: number): INetheriteTaskJson {
         return {
@@ -146,7 +189,9 @@ export namespace durableUtils {
             }
         };
     }
+}
 
+export namespace sqlUtils {
     export function getDefaultSqlTaskConfig(): ISqlTaskJson {
         return {
             storageProvider: {
