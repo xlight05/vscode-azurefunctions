@@ -3,13 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { SiteConfigResource } from '@azure/arm-appservice';
-import { deploy as innerDeploy, getDeployFsPath, getDeployNode, IDeployContext, IDeployPaths, showDeployConfirmation } from '@microsoft/vscode-azext-azureappservice';
+import { SiteConfigResource, StringDictionary } from '@azure/arm-appservice';
+import { deploy as innerDeploy, getDeployFsPath, getDeployNode, IDeployContext, IDeployPaths, showDeployConfirmation, SiteClient } from '@microsoft/vscode-azext-azureappservice';
 import { DialogResponses, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
-import { deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
+import { ConnectionKey, deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, localStorageEmulatorConnectionString, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
 import { ext } from '../../extensionVariables';
-import { validateStorageConnection } from '../../funcConfig/local.settings';
+import { getLocalConnectionString, validateStorageConnection } from '../../funcConfig/local.settings';
 import { addLocalFuncTelemetry } from '../../funcCoreTools/getLocalFuncCoreToolsVersion';
 import { localize } from '../../localize';
 import { ResolvedFunctionAppResource } from '../../tree/ResolvedFunctionAppResource';
@@ -68,6 +68,8 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         context.deployMethod = 'zip';
     }
 
+    const [shouldValidateStorage, shouldValidateNetherite] = await shouldValidateConnection(context, client);
+
     const doRemoteBuild: boolean | undefined = getWorkspaceSetting<boolean>(remoteBuildSetting, deployPaths.effectiveDeployFsPath);
     actionContext.telemetry.properties.scmDoBuildDuringDeployment = String(doRemoteBuild);
     if (doRemoteBuild) {
@@ -82,7 +84,8 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
     // Preliminary local validation done to ensure all required resources have been created for the connection, final deploy choices are made in 'verifyAppSettings'
     switch (durableStorageType) {
         case DurableBackend.Netherite:
-            await netheriteUtils.validateConnection(context, undefined /* projectPath */, true /* saveConnectionAsEnvVariable */);
+            if (!shouldValidateNetherite) break;
+            await netheriteUtils.validateConnection(context, { saveConnectionAsEnvVariable: true });
             break;
         case DurableBackend.SQL:
             break;
@@ -90,7 +93,9 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         default:
     }
 
-    await validateStorageConnection(context, undefined /* projectPath */, true /* saveConnectionAsEnvVariable */);
+    if (shouldValidateStorage) {
+        await validateStorageConnection(context, { saveConnectionAsEnvVariable: true });
+    }
 
     if (getWorkspaceSetting<boolean>('showDeployConfirmation', context.workspaceFolder.uri.fsPath) && !context.isNewApp && isZipDeploy) {
         await showDeployConfirmation(context, node.site, 'azureFunctions.deploy');
@@ -102,8 +107,8 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         void validateGlobSettings(context, context.effectiveDeployFsPath);
     }
 
-    if (language === ProjectLanguage.CSharp && !node.site.isLinux || context.durableStorageType) {
-        await updateWorkerProcessTo64BitIfRequired(context, siteConfig, node, language);
+    if (language === ProjectLanguage.CSharp && !node.site.isLinux || durableStorageType) {
+        await updateWorkerProcessTo64BitIfRequired(context, siteConfig, node, language, durableStorageType);
     }
 
     if (isZipDeploy) {
@@ -135,13 +140,13 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
     await notifyDeployComplete(context, node, context.workspaceFolder);
 }
 
-async function updateWorkerProcessTo64BitIfRequired(context: IDeployContext, siteConfig: SiteConfigResource, node: SlotTreeItem, language: ProjectLanguage): Promise<void> {
+async function updateWorkerProcessTo64BitIfRequired(context: IDeployContext, siteConfig: SiteConfigResource, node: SlotTreeItem, language: ProjectLanguage, durableStorageType: DurableBackendValues | undefined): Promise<void> {
     const client = await node.site.createClient(context);
     const config: SiteConfigResource = {
         use32BitWorkerProcess: false
     };
 
-    if (context.durableStorageType) {
+    if (durableStorageType) {
         await client.updateConfiguration(config);
         return;
     }
@@ -176,4 +181,18 @@ async function validateGlobSettings(context: IActionContext, fsPath: string): Pr
         const message: string = localize('globSettingRemoved', '"{0}" and "{1}" settings are no longer supported. Instead, place a ".funcignore" file at the root of your repo, using the same syntax as a ".gitignore" file.', includeKey, excludeKey);
         await context.ui.showWarningMessage(message, { stepName: 'globSettingRemoved' });
     }
+}
+
+export async function shouldValidateConnection(context: IActionContext, client: SiteClient, projectPath?: string): Promise<[boolean, boolean]> {
+    const app: StringDictionary = await client.listApplicationSettings();
+    const remoteStorageConnection: string | undefined = app?.properties?.[ConnectionKey.Storage];
+    const remoteEventHubsConnection: string | undefined = app?.properties?.[ConnectionKey.EventHub];
+
+    const localStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
+    const localEventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
+
+    const shouldValidateStorage: boolean = !remoteStorageConnection || (!!localStorageConnection && localStorageConnection !== localStorageEmulatorConnectionString && remoteStorageConnection !== localStorageConnection);
+    const shouldValidateEventHubs: boolean = !remoteEventHubsConnection || (!!localEventHubsConnection && localEventHubsConnection !== localStorageEmulatorConnectionString && remoteEventHubsConnection !== localEventHubsConnection);
+
+    return [shouldValidateStorage, shouldValidateEventHubs];
 }

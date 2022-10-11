@@ -11,10 +11,13 @@ import { createEventHubClient } from '../../../../utils/azureClients';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 
 export class EventHubsNamespaceNameStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
+    private client: EventHubManagementClient;
+
     public async prompt(context: T): Promise<void> {
+        this.client = await createEventHubClient(<T & ISubscriptionContext>context);
         context.newEventHubsNamespaceName = (await context.ui.showInputBox({
             prompt: localize('eventHubNamePrompt', 'Enter a name for the new Event Hubs Namespace.'),
-            validateInput: async (value: string | undefined): Promise<string | undefined> => await this.validateInput(<T & ISubscriptionContext>context, value)
+            validateInput: async (value: string | undefined) => await this.validateInput(value)
         })).trim();
     }
 
@@ -22,12 +25,7 @@ export class EventHubsNamespaceNameStep<T extends IEventHubsConnectionWizardCont
         return !context.eventHubsNamespace && !context.newEventHubsNamespaceName;
     }
 
-    private async isNameAvailable(context: T & ISubscriptionContext, name: string): Promise<boolean> {
-        const client: EventHubManagementClient = await createEventHubClient(context);
-        return !!(await client.namespaces.checkNameAvailability({ name })).nameAvailable;
-    }
-
-    private async validateInput(context: T & ISubscriptionContext, name: string | undefined): Promise<string | undefined> {
+    private async validateInput(name: string | undefined): Promise<string | undefined> {
         name = name ? name.trim() : '';
 
         // Todo: fix regexp accordingly, validate delay, add localize string to constants if needed
@@ -37,9 +35,10 @@ export class EventHubsNamespaceNameStep<T extends IEventHubsConnectionWizardCont
 
         await delay(2000);
 
-        const isAvailable: boolean = await this.isNameAvailable(context, name);
+        // Todo validate that this works, use 'eventhub'
+        const isAvailable: boolean = !!(await this.client.namespaces.checkNameAvailability({ name })).nameAvailable;
         if (!isAvailable) {
-            return localize('eventHubNamespaceExists', 'The Event Hub Namespace "{0}" already exists. Please enter a unique name.', name);
+            return localize('eventHubNamespaceExists', 'The name you entered already exists. Please enter a unique name.');
         }
         return undefined;
     }

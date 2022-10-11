@@ -60,7 +60,7 @@ export async function preDebugValidate(context: IActionContext, debugConfig: vsc
                 switch (durableStorageType) {
                     case DurableBackend.Netherite:
                         context.telemetry.properties.lastValidateStep = 'netheriteConnection';
-                        await netheriteUtils.validateConnection(context, projectPath);
+                        await netheriteUtils.validateConnection(context);
                         break;
                     case DurableBackend.SQL:
                         break;
@@ -171,7 +171,7 @@ async function validateAzureWebJobsStorage(context: IActionContext, projectLangu
             if (functions.some(f => !f.isHttpTrigger) || isPythonV2Plus(projectLanguage, projectLanguageModel)) {
                 const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
                 const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
-                    promptSteps: [new AzureWebJobsStoragePromptStep(true /* suppressSkipForNow */)],
+                    promptSteps: [new AzureWebJobsStoragePromptStep({ suppressSkipForNow: true })],
                     executeSteps: [new AzureWebJobsStorageExecuteStep()]
                 });
                 await wizard.prompt();

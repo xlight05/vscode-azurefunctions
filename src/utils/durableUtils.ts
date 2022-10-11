@@ -5,8 +5,11 @@
 
 import { AzExtFsExtra, AzureWizard, AzureWizardExecuteStep, AzureWizardPromptStep, IActionContext, IAzureQuickPickItem, nonNullProp } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
+import { Uri } from "vscode";
+import * as xml2js from "xml2js";
 import { EventHubsConnectionExecuteStep } from "../commands/appSettings/EventHubsConnectionExecuteStep";
 import { EventHubsConnectionPromptStep } from "../commands/appSettings/EventHubsConnectionPromptStep";
+import { IValidateConnectionOptions } from "../commands/appSettings/IConnectionPrompOptions";
 import { IEventHubsConnectionWizardContext } from "../commands/appSettings/IEventHubsConnectionWizardContext";
 import { NetheriteConfigureHostStep } from "../commands/createFunction/durableSteps/netherite/NetheriteConfigureHostStep";
 import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep";
@@ -16,11 +19,11 @@ import { ConnectionKey, DurableBackend, DurableBackendValues, emptyWorkspace, ho
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { getLocalConnectionString } from "../funcConfig/local.settings";
 import { localize } from "../localize";
-import { getWorkspaceRootPath } from "./workspace";
+import { findFiles, getWorkspaceRootPath } from "./workspace";
 
 export namespace durableUtils {
     export function requiresDurableStorage(templateId: string): boolean {
-        const durableOrchestrator: RegExp = /\bDurableFunctionsOrchestrator/i;
+        const durableOrchestrator: RegExp = /DurableFunctionsOrchestrat/i;  // Sometimes ends with 'or' or 'ion'
         return durableOrchestrator.test(templateId);
     }
 
@@ -85,8 +88,9 @@ export namespace durableUtils {
             case ProjectLanguage.JavaScript:
             case ProjectLanguage.TypeScript:
                 return await nodeProjectHasDurableDependency(projectPath);
-            case ProjectLanguage.CSharpScript:
-            case ProjectLanguage.FSharpScript:
+            case ProjectLanguage.CSharp:
+            case ProjectLanguage.FSharp:
+                return await dotnetProjectHasDurableDependency(projectPath);
             case ProjectLanguage.PowerShell:
                 // ???
                 return false;
@@ -106,6 +110,35 @@ export namespace durableUtils {
         } catch {
             return false;
         }
+    }
+
+    async function dotnetProjectHasDurableDependency(projectPath: string): Promise<boolean> {
+        const dfPackageName: string = 'Microsoft.Azure.WebJobs.Extensions.DurableTask';
+        const csProjPaths: Uri[] = await findFiles(projectPath, '*.csproj');
+        const csProjContents: string = await AzExtFsExtra.readFile(csProjPaths[0].path);
+
+        return new Promise((resolve) => {
+            xml2js.parseString(csProjContents, { explicitArray: false }, (err: any, result: any): void => {
+                try {
+                    if (result && !err) {
+                        if (result && result['Project'] && result['Project']['ItemGroup']?.length) {
+                            const packageReferences = result['Project']['ItemGroup'][0]?.PackageReference ?? [];
+                            for (const packageRef of packageReferences) {
+                                if (packageRef['$'] && packageRef['$']['Include']) {
+                                    if (packageRef['$']['Include'] === dfPackageName) {
+                                        resolve(true);
+                                        return;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    resolve(false);
+                } catch {
+                    resolve(false);
+                }
+            });
+        });
     }
 
     export function getDefaultStorageTaskConfig(): IStorageTaskJson {
@@ -140,7 +173,7 @@ export namespace netheriteUtils {
         }
     }
 
-    export async function validateConnection(context: IActionContext, projectPath?: string, saveConnectionAsEnvVariable?: boolean /* don't overwrite local settings during deploy */): Promise<void> {
+    export async function validateConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
         projectPath ??= getWorkspaceRootPath();
 
         if (!projectPath) {
@@ -158,8 +191,8 @@ export namespace netheriteUtils {
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
         if (!hasEventHubsConnection) {
-            promptSteps.push(new EventHubsConnectionPromptStep(true /* suppressSkipForNow */));
-            executeSteps.push(new EventHubsConnectionExecuteStep(saveConnectionAsEnvVariable));
+            promptSteps.push(new EventHubsConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }));
+            executeSteps.push(new EventHubsConnectionExecuteStep(options?.saveConnectionAsEnvVariable));
         }
         if (!eventHubName) {
             promptSteps.push(new NetheriteEventHubNameStep());

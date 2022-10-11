@@ -9,6 +9,7 @@ import * as vscode from 'vscode';
 import { AzureWebJobsStorageExecuteStep } from '../commands/appSettings/AzureWebJobsStorageExecuteStep';
 import { AzureWebJobsStoragePromptStep } from '../commands/appSettings/AzureWebJobsStoragePromptStep';
 import { IAzureWebJobsStorageWizardContext } from '../commands/appSettings/IAzureWebJobsStorageWizardContext';
+import { IValidateConnectionOptions } from '../commands/appSettings/IConnectionPrompOptions';
 import { ConnectionKey, ConnectionKeyValues, emptyWorkspace, localSettingsFileName, localStorageEmulatorConnectionString } from '../constants';
 import { localize } from '../localize';
 import { parseJson } from '../utils/parseJson';
@@ -37,7 +38,7 @@ export async function getLocalConnectionString(context: IActionContext, connecti
     return settings.Values && settings.Values[connectionKey];
 }
 
-export async function validateStorageConnection(context: IActionContext, projectPath?: string, saveConnectionAsEnvVariable?: boolean /* don't overwrite local settings defaults during deploy */): Promise<void> {
+export async function validateStorageConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
     projectPath ??= getWorkspaceRootPath();
 
     if (!projectPath) {
@@ -46,15 +47,15 @@ export async function validateStorageConnection(context: IActionContext, project
 
     const currentStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
     const hasStorageConnection: boolean = !!currentStorageConnection && currentStorageConnection !== localStorageEmulatorConnectionString;
-    if (hasStorageConnection && saveConnectionAsEnvVariable) {
+    if (hasStorageConnection && options?.saveConnectionAsEnvVariable) {
         process.env[ConnectionKey.Storage] = currentStorageConnection;
         return;
     }
 
     const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
     const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
-        promptSteps: [new AzureWebJobsStoragePromptStep(true /* suppressSkipForNow */)],
-        executeSteps: [new AzureWebJobsStorageExecuteStep(saveConnectionAsEnvVariable)]
+        promptSteps: [new AzureWebJobsStoragePromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true })],
+        executeSteps: [new AzureWebJobsStorageExecuteStep(options?.saveConnectionAsEnvVariable)]
     });
     await wizard.prompt();
     await wizard.execute();

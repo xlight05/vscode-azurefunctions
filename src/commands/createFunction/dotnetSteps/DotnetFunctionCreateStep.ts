@@ -5,8 +5,10 @@
 
 import { IActionContext } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
+import { DurableBackend } from '../../../constants';
 import { ext } from '../../../extensionVariables';
 import { FuncVersion } from '../../../FuncVersion';
+import { localize } from '../../../localize';
 import { executeDotnetTemplateCommand, validateDotnetInstalled } from '../../../templates/dotnet/executeDotnetTemplateCommand';
 import { IFunctionTemplate } from '../../../templates/IFunctionTemplate';
 import { cpUtils } from '../../../utils/cpUtils';
@@ -53,6 +55,30 @@ export class DotnetFunctionCreateStep extends FunctionCreateStepBase<IDotnetFunc
         }
         await executeDotnetTemplateCommand(context, version, projectTemplateKey, context.projectPath, 'create', '--identity', template.id, ...args);
 
+        await this._installDependenciesIfNeeded(context);
+
         return path.join(context.projectPath, functionName + getFileExtension(context));
+    }
+
+    private async _installDependenciesIfNeeded(context: IDotnetFunctionWizardContext): Promise<void> {
+        try {
+            // Install Durable Functions dependency
+            if (context.durableStorageType) {
+                switch (context.durableStorageType) {
+                    case DurableBackend.Netherite:
+                        // Todo: verify how this should be installed
+                        await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.DurableTask.Netherite.AzureFunctions');
+                        break;
+                    case DurableBackend.SQL:
+                        break;
+                    case DurableBackend.Storage:
+                    default:
+                }
+
+                await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.WebJobs.Extensions.DurableTask');  // Seems that the package arrives out-dated and needs to be updated
+            }
+        } catch {
+            ext.outputChannel.appendLog(localize('funcInstallFailed', 'WARNING: Failed to install and update Durable Functions NuGet packages to the .csproj project file. You may need to configure them manually or start from a clean project.'))
+        }
     }
 }

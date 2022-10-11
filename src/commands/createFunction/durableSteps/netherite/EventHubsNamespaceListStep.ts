@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { EHNamespace, EventHubManagementClient } from '@azure/arm-eventhub';
-import { ResourceGroupListStep, uiUtils } from '@microsoft/vscode-azext-azureutils';
+import { LocationListStep, ResourceGroupListStep, uiUtils } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardExecuteStep, AzureWizardPromptStep, IAzureQuickPickItem, IAzureQuickPickOptions, ISubscriptionContext, IWizardOptions, nonNullProp } from '@microsoft/vscode-azext-utils';
 import { localize } from '../../../../localize';
 import { createEventHubClient } from '../../../../utils/azureClients';
@@ -34,6 +34,7 @@ export class EventHubsNamespaceListStep<T extends IEventHubsConnectionWizardCont
             executeSteps.push(new EventHubsNamespaceCreateStep());
         }
 
+        LocationListStep.addStep(context, promptSteps);
         promptSteps.push(new ResourceGroupListStep());
 
         return { promptSteps, executeSteps };

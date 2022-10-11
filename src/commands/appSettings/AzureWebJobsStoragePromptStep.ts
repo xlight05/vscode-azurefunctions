@@ -10,28 +10,31 @@ import { ConnectionType, ConnectionTypeValues, skipForNow, useEmulator } from '.
 import { ext } from '../../extensionVariables';
 import { localize } from '../../localize';
 import { IAzureWebJobsStorageWizardContext } from './IAzureWebJobsStorageWizardContext';
-
+import { IConnectionPromptOptions } from './IConnectionPrompOptions';
 export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardContext> extends AzureWizardPromptStep<T> {
-    private readonly _suppressSkipForNow?: boolean;
-
-    public constructor(suppressSkipForNow?: boolean) {
+    public constructor(private readonly _options?: IConnectionPromptOptions) {
         super();
-        this._suppressSkipForNow = suppressSkipForNow;
     }
 
     public async prompt(context: T): Promise<void> {
+        if (this._options?.preSelectedConnectionType) {
+            context.azureWebJobsStorageType = this._options.preSelectedConnectionType;
+            context.telemetry.properties.azureWebJobsStorageType = this._options.preSelectedConnectionType;
+            return;
+        }
+
         const selectStorageButton: MessageItem = { title: localize('selectStorageAccount', 'Select Storage Account') };
         const useEmulatorButton: MessageItem = { title: useEmulator };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
-        const message: string = localize('selectAzureWebJobsStorage', 'In order to debug, you must select a storage account for internal use by the Azure Functions runtime.');
+        const message: string = localize('selectAzureWebJobsStorage', 'In order to proceed, you must select a storage account for internal use by the Azure Functions runtime.');
 
         const buttons: MessageItem[] = [selectStorageButton];
         if (process.platform === 'win32') {
             // Only show on Windows until Azurite is officially supported: https://github.com/Azure/azure-functions-core-tools/issues/1247
             buttons.push(useEmulatorButton);
         }
-        if (!this._suppressSkipForNow) {
+        if (!this._options?.suppressSkipForNow) {
             buttons.push(skipForNowButton);
         }
 
