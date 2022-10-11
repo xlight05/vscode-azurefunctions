@@ -3,10 +3,13 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzExtFsExtra, DialogResponses, IActionContext, parseError } from '@microsoft/vscode-azext-utils';
+import { AzExtFsExtra, AzureWizard, DialogResponses, IActionContext, parseError } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
 import * as vscode from 'vscode';
-import { ConnectionKeyValues, localSettingsFileName } from '../constants';
+import { AzureWebJobsStorageExecuteStep } from '../commands/appSettings/AzureWebJobsStorageExecuteStep';
+import { AzureWebJobsStoragePromptStep } from '../commands/appSettings/AzureWebJobsStoragePromptStep';
+import { IAzureWebJobsStorageWizardContext } from '../commands/appSettings/IAzureWebJobsStorageWizardContext';
+import { ConnectionKey, ConnectionKeyValues, emptyWorkspace, localSettingsFileName, localStorageEmulatorConnectionString } from '../constants';
 import { localize } from '../localize';
 import { parseJson } from '../utils/parseJson';
 import { getWorkspaceRootPath } from '../utils/workspace';
@@ -32,6 +35,29 @@ export async function getLocalConnectionString(context: IActionContext, connecti
 
     const settings: ILocalSettingsJson = await getLocalSettingsJson(context, path.join(projectPath, localSettingsFileName));
     return settings.Values && settings.Values[connectionKey];
+}
+
+export async function validateStorageConnection(context: IActionContext, projectPath?: string, saveConnectionAsEnvVariable?: boolean /* don't overwrite local settings defaults during deploy */): Promise<void> {
+    projectPath ??= getWorkspaceRootPath();
+
+    if (!projectPath) {
+        throw new Error(emptyWorkspace);
+    }
+
+    const currentStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
+    const hasStorageConnection: boolean = !!currentStorageConnection && currentStorageConnection !== localStorageEmulatorConnectionString;
+    if (hasStorageConnection && saveConnectionAsEnvVariable) {
+        process.env[ConnectionKey.Storage] = currentStorageConnection;
+        return;
+    }
+
+    const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
+    const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
+        promptSteps: [new AzureWebJobsStoragePromptStep(true /* suppressSkipForNow */)],
+        executeSteps: [new AzureWebJobsStorageExecuteStep(saveConnectionAsEnvVariable)]
+    });
+    await wizard.prompt();
+    await wizard.execute();
 }
 
 export enum MismatchBehavior {

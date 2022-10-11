@@ -12,7 +12,7 @@ import { NetheriteConfigureHostStep } from "../commands/createFunction/durableSt
 import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep";
 import { NetheriteEventHubPartitionsStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubPartitionsStep";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
-import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, ProjectLanguage } from "../constants";
+import { ConnectionKey, DurableBackend, DurableBackendValues, emptyWorkspace, hostFileName, localEventHubsEmulatorConnectionString, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { getLocalConnectionString } from "../funcConfig/local.settings";
 import { localize } from "../localize";
@@ -140,14 +140,16 @@ export namespace netheriteUtils {
         }
     }
 
-    export async function validateConnection(context: IActionContext, projectPath?: string): Promise<void> {
+    export async function validateConnection(context: IActionContext, projectPath?: string, saveConnectionAsEnvVariable?: boolean /* don't overwrite local settings during deploy */): Promise<void> {
         projectPath ??= getWorkspaceRootPath();
 
         if (!projectPath) {
-            throw new Error(localize('emptyWorkspace', 'Your workspace folder looks empty, please navigate to the root directory of your project.'));
+            throw new Error(emptyWorkspace);
         }
 
         const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
+        const hasEventHubsConnection: boolean = !!eventHubsConnection && eventHubsConnection !== localEventHubsEmulatorConnectionString;
+
         const eventHubName: string | undefined = await getEventHubName(projectPath);
         const partitionCount: number | undefined = await getPartitionCount(projectPath);
 
@@ -155,9 +157,9 @@ export namespace netheriteUtils {
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
-        if (!eventHubsConnection) {
+        if (!hasEventHubsConnection) {
             promptSteps.push(new EventHubsConnectionPromptStep(true /* suppressSkipForNow */));
-            executeSteps.push(new EventHubsConnectionExecuteStep());
+            executeSteps.push(new EventHubsConnectionExecuteStep(saveConnectionAsEnvVariable));
         }
         if (!eventHubName) {
             promptSteps.push(new NetheriteEventHubNameStep());

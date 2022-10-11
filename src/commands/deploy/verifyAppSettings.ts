@@ -7,7 +7,7 @@ import { StringDictionary } from '@azure/arm-appservice';
 import { ParsedSite } from '@microsoft/vscode-azext-azureappservice';
 import { IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
-import { ConnectionKey, ConnectionKeyValues, DurableBackend, DurableBackendValues, extensionVersionKey, local, localEventHubsEmulatorConnectionString, localStorageEmulatorConnectionString, ProjectLanguage, remote, runFromPackageKey, workerRuntimeKey } from '../../constants';
+import { ConnectionKey, ConnectionKeyValues, DurableBackend, DurableBackendValues, extensionVersionKey, ProjectLanguage, runFromPackageKey, workerRuntimeKey } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { getLocalConnectionString } from '../../funcConfig/local.settings';
 import { FuncVersion, tryParseFuncVersion } from '../../FuncVersion';
@@ -36,7 +36,8 @@ export async function verifyAppSettings(context: IActionContext, node: SlotTreeI
             updateAppSettings ||= verifyRunFromPackage(context, node.site, appSettings.properties);
         }
 
-        updateAppSettings ||= await verifyConnectionStrings(context, durableStorageType, appSettings.properties, projectPath);
+        const updatedRemoteConnection = await verifyAndUpdateConnectionStrings(context, durableStorageType, appSettings.properties, projectPath);
+        updateAppSettings ||= updatedRemoteConnection;
 
         if (updateAppSettings) {
             await client.updateApplicationSettings(appSettings);
@@ -46,13 +47,14 @@ export async function verifyAppSettings(context: IActionContext, node: SlotTreeI
     }
 }
 
-export async function verifyConnectionStrings(context: IActionContext, durableStorageType: DurableBackendValues | undefined, remoteProperties: { [propertyName: string]: string }, projectPath: string | undefined): Promise<boolean> {
-    const overwrite: boolean = await shouldOverwrite(context);
+export async function verifyAndUpdateConnectionStrings(context: IActionContext, durableStorageType: DurableBackendValues | undefined, remoteProperties: { [propertyName: string]: string }, projectPath: string | undefined): Promise<boolean> {
     let didChange: boolean = false;
     switch (durableStorageType) {
         case DurableBackend.Netherite:
             const localEventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
-            didChange ||= await updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.EventHub, localEventHubsConnection, overwrite, localEventHubsConnection === localEventHubsEmulatorConnectionString);
+            const updatedNetheriteConnection: boolean = await updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.EventHub, localEventHubsConnection);
+            didChange ||= updatedNetheriteConnection;
+            delete process.env[ConnectionKey.EventHub];
             break;
         case DurableBackend.SQL:
             break;
@@ -61,34 +63,22 @@ export async function verifyConnectionStrings(context: IActionContext, durableSt
     }
 
     const localStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
-    didChange ||= await updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.Storage, localStorageConnection, overwrite, localStorageConnection === localStorageEmulatorConnectionString);
+    const updatedStorageConnection = await updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.Storage, localStorageConnection);
+    didChange ||= updatedStorageConnection;
+    delete process.env[ConnectionKey.Storage];
 
     return didChange;
 }
 
-export async function shouldOverwrite(context: IActionContext): Promise<boolean> {
-    const items: vscode.MessageItem[] = [{ title: local }, { title: remote }];
-    const result: string | undefined = (await context.ui.showWarningMessage(localize('selectOverwriteBehavior', 'Discrepancies between local and remote settings may exist, which environment settings are more current?'), { modal: true }, ...items)).title;
-    if (result === 'Local') {
+export async function updateConnectionStringIfNeeded(context: IActionContext, remoteProperties: { [propertyName: string]: string }, propertyName: ConnectionKeyValues, newValue: string | undefined): Promise<boolean> {
+    const remoteValue = remoteProperties[propertyName];
+    if (remoteValue !== newValue) {
+        remoteProperties[propertyName] = newValue || '';
+        context.telemetry.properties[`update${propertyName}`] = String(true);
         return true;
     } else {
         return false;
     }
-}
-
-export async function updateConnectionStringIfNeeded(context: IActionContext, remoteProperties: { [propertyName: string]: string }, propertyName: ConnectionKeyValues, newValue: string | undefined, overwrite: boolean, isEmulator: boolean): Promise<boolean> {
-    const remoteValue = remoteProperties[propertyName];
-    if (!!newValue && !isEmulator && overwrite) {
-        remoteProperties[propertyName] = newValue;
-    } else if (!remoteValue && !!newValue && !isEmulator) {
-        // Regardless of overwrite flag, if there is a local settings value (that isn't an emulator) and no remote value, we will go ahead and match it
-        remoteProperties[propertyName] = newValue;
-    } else {
-        return false;
-    }
-
-    context.telemetry.properties[`update${propertyName}`] = String(true);
-    return true;
 }
 
 export async function verifyVersionAndLanguage(context: IActionContext, projectPath: string | undefined, siteName: string, localVersion: FuncVersion, localLanguage: ProjectLanguage, remoteProperties: { [propertyName: string]: string }): Promise<void> {

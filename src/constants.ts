@@ -119,7 +119,7 @@ export const tsDefaultOutDir: string = 'dist';
 export const tsConfigFileName: string = 'tsconfig.json';
 
 export const localStorageEmulatorConnectionString: string = 'UseDevelopmentStorage=true';
-export const localEventHubsEmulatorConnectionString: string = 'MemoryF';
+export const localEventHubsEmulatorConnectionString: string = 'MemoryF';  // TODO, emulator can actually be 'Memory' or 'MemoryF'
 
 export const workerRuntimeKey: string = 'FUNCTIONS_WORKER_RUNTIME';
 export const workerRuntimeVersionKey: string = 'FUNCTIONS_WORKER_RUNTIME_VERSION';
@@ -135,6 +135,7 @@ export const previewDescription: string = localize('preview', '(Preview)');
 export const pythonNewModelPreview: string = localize('pythonNewModelPreview', 'Python (Programming Model V2)');
 export const npmInstallFailure: string = localize('npmInstallFailure', 'WARNING: Failed to install packages in your workspace. Run "npm install" manually instead.');
 export const hostJsonConfigFailed: string = localize('durableStorageConfigFailed', 'WARNING: Failed to configure your JSON files for durable storage, you may need to configure them manually or start from a clean project.');
+export const emptyWorkspace: string = localize('emptyWorkspace', 'Your workspace folder looks empty, please navigate to the root directory of your project.');
 export const useEmulator: string = localize('useEmulator', 'Use Local Emulator');
 export const skipForNow: string = localize('skipForNow', 'Skip For Now');
 export const recommended: string = localize('recommended', '(Recommended)');

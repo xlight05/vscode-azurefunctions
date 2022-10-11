@@ -5,12 +5,16 @@
 
 import { AzureWizardExecuteStep, ISubscriptionContext } from '@microsoft/vscode-azext-utils';
 import { ConnectionKey, ConnectionType, localEventHubsEmulatorConnectionString } from '../../constants';
-import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
+import { getLocalConnectionString, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getEventHubsConnectionString } from '../../utils/azure';
 import { IEventHubsConnectionWizardContext } from './IEventHubsConnectionWizardContext';
 
 export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardExecuteStep<T> {
     public priority: number = 240;
+
+    public constructor(private _saveAsProcessEnvVariable?: boolean) {
+        super();
+    }
 
     public async execute(context: T): Promise<void> {
         let value: string;
@@ -20,7 +24,12 @@ export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizard
             value = (await getEventHubsConnectionString(<T & ISubscriptionContext>context)).connectionString;
         }
 
-        await setLocalAppSetting(context, context.projectPath, ConnectionKey.EventHub, value, MismatchBehavior.Overwrite);
+        const currentEventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, context.projectPath);
+        if (!currentEventHubsConnection || !this._saveAsProcessEnvVariable) {
+            await setLocalAppSetting(context, context.projectPath, ConnectionKey.EventHub, value, MismatchBehavior.Overwrite);
+        } else {
+            process.env[ConnectionKey.EventHub] = value;
+        }
     }
 
     public shouldExecute(context: T): boolean {

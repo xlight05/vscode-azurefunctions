@@ -9,6 +9,7 @@ import { DialogResponses, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
 import { deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
 import { ext } from '../../extensionVariables';
+import { validateStorageConnection } from '../../funcConfig/local.settings';
 import { addLocalFuncTelemetry } from '../../funcCoreTools/getLocalFuncCoreToolsVersion';
 import { localize } from '../../localize';
 import { ResolvedFunctionAppResource } from '../../tree/ResolvedFunctionAppResource';
@@ -77,15 +78,19 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         context.deployMethod = 'storage';
     }
 
-    switch (context.durableStorageType) {
+    // Todo: Validate the event hub name is available
+    // Preliminary local validation done to ensure all required resources have been created for the connection, final deploy choices are made in 'verifyAppSettings'
+    switch (durableStorageType) {
         case DurableBackend.Netherite:
-            await netheriteUtils.validateConnection(context);
+            await netheriteUtils.validateConnection(context, undefined /* projectPath */, true /* saveConnectionAsEnvVariable */);
             break;
         case DurableBackend.SQL:
             break;
         case DurableBackend.Storage:
         default:
     }
+
+    await validateStorageConnection(context, undefined /* projectPath */, true /* saveConnectionAsEnvVariable */);
 
     if (getWorkspaceSetting<boolean>('showDeployConfirmation', context.workspaceFolder.uri.fsPath) && !context.isNewApp && isZipDeploy) {
         await showDeployConfirmation(context, node.site, 'azureFunctions.deploy');
