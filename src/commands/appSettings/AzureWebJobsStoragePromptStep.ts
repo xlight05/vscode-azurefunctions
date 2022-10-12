@@ -50,9 +50,11 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
         context.telemetry.properties.azureWebJobsStorageType = context.azureWebJobsStorageType;
     }
 
-    public shouldPrompt(context: T & { eventHubConnectionType?: ConnectionTypeValues }): boolean {
+    public shouldPrompt(context: T & { eventHubConnectionType?: ConnectionTypeValues, sqlDbConnectionType?: ConnectionTypeValues }): boolean {
         if (context.eventHubConnectionType) {
             context.azureWebJobsStorageType = context.eventHubConnectionType;
+        } else if (context.sqlDbConnectionType) {
+            context.azureWebJobsStorageType = context.sqlDbConnectionType;
         }
         return !context.azureWebJobsStorageType;
     }

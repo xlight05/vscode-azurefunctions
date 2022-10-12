@@ -17,7 +17,7 @@ export class AzureWebJobsStorageExecuteStep<T extends IAzureWebJobsStorageWizard
         super();
     }
 
-    public async execute(context: IAzureWebJobsStorageWizardContext): Promise<void> {
+    public async execute(context: T): Promise<void> {
         let value: string;
         if (context.azureWebJobsStorageType === ConnectionType.Emulator) {
             value = localStorageEmulatorConnectionString;
@@ -33,7 +33,7 @@ export class AzureWebJobsStorageExecuteStep<T extends IAzureWebJobsStorageWizard
         }
     }
 
-    public shouldExecute(context: IAzureWebJobsStorageWizardContext): boolean {
+    public shouldExecute(context: T): boolean {
         return !!context.azureWebJobsStorageType && context.azureWebJobsStorageType !== ConnectionType.Skip;
     }
 }

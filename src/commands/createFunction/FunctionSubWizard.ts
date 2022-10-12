@@ -15,6 +15,8 @@ import { AzureWebJobsStorageExecuteStep } from '../appSettings/AzureWebJobsStora
 import { AzureWebJobsStoragePromptStep } from '../appSettings/AzureWebJobsStoragePromptStep';
 import { EventHubsConnectionExecuteStep } from '../appSettings/EventHubsConnectionExecuteStep';
 import { EventHubsConnectionPromptStep } from '../appSettings/EventHubsConnectionPromptStep';
+import { SqlDatabaseConnectionExecuteStep } from '../appSettings/SqlDatabaseConnectionExecuteStep';
+import { SqlDatabaseConnectionPromptStep } from '../appSettings/SqlDatabaseConnectionPromptStep';
 import { JavaPackageNameStep } from '../createNewProject/javaSteps/JavaPackageNameStep';
 import { DotnetFunctionCreateStep } from './dotnetSteps/DotnetFunctionCreateStep';
 import { DotnetFunctionNameStep } from './dotnetSteps/DotnetFunctionNameStep';
@@ -97,8 +99,8 @@ export class FunctionSubWizard {
                     executeSteps.push(new EventHubsConnectionExecuteStep(), new NetheriteConfigureHostStep());
                     break;
                 case DurableBackend.SQL:
-                    promptSteps.push();
-                    executeSteps.push();
+                    promptSteps.push(new SqlDatabaseConnectionPromptStep());
+                    executeSteps.push(new SqlDatabaseConnectionExecuteStep());
                     break;
                 case DurableBackend.Storage:
                 default:

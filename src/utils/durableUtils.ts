@@ -119,24 +119,18 @@ export namespace durableUtils {
 
         return new Promise((resolve) => {
             xml2js.parseString(csProjContents, { explicitArray: false }, (err: any, result: any): void => {
-                try {
-                    if (result && !err) {
-                        if (result && result['Project'] && result['Project']['ItemGroup']?.length) {
-                            const packageReferences = result['Project']['ItemGroup'][0]?.PackageReference ?? [];
-                            for (const packageRef of packageReferences) {
-                                if (packageRef['$'] && packageRef['$']['Include']) {
-                                    if (packageRef['$']['Include'] === dfPackageName) {
-                                        resolve(true);
-                                        return;
-                                    }
-                                }
+                if (result && !err) {
+                    const packageReferences = result?.['Project']?.['ItemGroup'][0]?.PackageReference ?? [];
+                    for (const packageRef of packageReferences) {
+                        if (packageRef['$'] && packageRef['$']['Include']) {
+                            if (packageRef['$']['Include'] === dfPackageName) {
+                                resolve(true);
+                                return;
                             }
                         }
                     }
-                    resolve(false);
-                } catch {
-                    resolve(false);
                 }
+                resolve(false);
             });
         });
     }
