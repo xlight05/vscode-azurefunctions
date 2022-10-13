@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardPromptStep } from '@microsoft/vscode-azext-utils';
-import { ConnectionType } from '../../../../constants';
 import { ISqlDatabaseConnectionWizardContext } from '../../../appSettings/ISqlDatabaseConnectionWizardContext';
 
 export class SqlServerNameStep<T extends ISqlDatabaseConnectionWizardContext> extends AzureWizardPromptStep<T> {
@@ -13,6 +12,6 @@ export class SqlServerNameStep<T extends ISqlDatabaseConnectionWizardContext> ex
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.newSqlServerName && context.sqlDbConnectionType !== ConnectionType.Skip;
+        return !context.newSqlServerName;
     }
 }

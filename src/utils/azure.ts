@@ -10,6 +10,7 @@ import { getResourceGroupFromId, IStorageAccountWizardContext, VerifyProvidersSt
 import { AzureWizard, AzureWizardExecuteStep, IActionContext, IAzureQuickPickItem, ISubscriptionContext } from '@microsoft/vscode-azext-utils';
 import { isArray } from 'util';
 import { IEventHubsConnectionWizardContext } from '../commands/appSettings/IEventHubsConnectionWizardContext';
+import { ISqlDatabaseConnectionWizardContext } from '../commands/appSettings/ISqlDatabaseConnectionWizardContext';
 import { IFunctionAppWizardContext } from '../commands/createFunctionApp/IFunctionAppWizardContext';
 import { webProvider } from '../constants';
 import { localize } from '../localize';
@@ -78,6 +79,18 @@ export async function getEventHubsConnectionString(context: IEventHubsConnection
     return {
         name: namespaceName,
         connectionString: accessKeys.primaryConnectionString || ""
+    };
+}
+
+export async function getSqlDatabaseConnectionString(context: ISqlDatabaseConnectionWizardContext): Promise<IResourceResult> {
+    const serverName: string = nonNullValue(context.sqlServer?.name);
+    const dbName: string = nonNullValue(context.sqlDatabase?.name);
+    const username: string = context.sqlServer?.administratorLogin || '<Insert Username>';
+    const password: string = context.sqlServer?.administratorLoginPassword || '<Insert Password>';
+
+    return {
+        name: dbName,
+        connectionString: `Server=${serverName}.database.windows.net,1433;Database=${dbName};User=${username};Password=${password}`
     };
 }
 

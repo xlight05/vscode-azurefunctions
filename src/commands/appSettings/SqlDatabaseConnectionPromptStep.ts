@@ -24,10 +24,10 @@ export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWiz
             return;
         }
 
-        const selectSqlDatabase: MessageItem = { title: localize('selectSqlDatabase', 'Select SQL Database') };
+        const selectSqlDatabase: MessageItem = { title: localize('selectSqlDatabase', 'Select SQL Server') };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
-        const message: string = localize('selectSqlDatabaseConnection', 'In order to proceed, you must select a SQL database for internal use by the Azure Functions runtime.');
+        const message: string = localize('selectSqlDatabaseConnection', 'In order to proceed, you must select a SQL server for internal use by the Azure Functions runtime.');
 
         const buttons: MessageItem[] = [selectSqlDatabase];
 

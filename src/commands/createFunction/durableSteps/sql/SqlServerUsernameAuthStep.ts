@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardPromptStep } from '@microsoft/vscode-azext-utils';
-import { ConnectionType } from '../../../../constants';
 import { ISqlDatabaseConnectionWizardContext } from '../../../appSettings/ISqlDatabaseConnectionWizardContext';
 
 export class SqlServerUsernameAuthStep<T extends ISqlDatabaseConnectionWizardContext> extends AzureWizardPromptStep<T> {
@@ -13,6 +12,6 @@ export class SqlServerUsernameAuthStep<T extends ISqlDatabaseConnectionWizardCon
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.newSqlAdminUsername && context.sqlDbConnectionType !== ConnectionType.Skip;
+        return !context.newSqlAdminUsername;
     }
 }

@@ -191,6 +191,7 @@ export async function shouldValidateConnection(context: IActionContext, client: 
     const localStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
     const localEventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
 
+    // Todo: shouldValidate && !!remoteConnection, prompt user for overwrite
     const shouldValidateStorage: boolean = !remoteStorageConnection || (!!localStorageConnection && localStorageConnection !== localStorageEmulatorConnectionString && remoteStorageConnection !== localStorageConnection);
     const shouldValidateEventHubs: boolean = !remoteEventHubsConnection || (!!localEventHubsConnection && localEventHubsConnection !== localStorageEmulatorConnectionString && remoteEventHubsConnection !== localEventHubsConnection);
 

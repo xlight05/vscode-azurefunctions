@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { ResourceGroup } from "@azure/arm-resources/esm/models";
-import { Server } from '@azure/arm-sql';
+import { Database, Server } from '@azure/arm-sql';
 import { IActionContext, ISubscriptionContext } from "@microsoft/vscode-azext-utils";
 import { ConnectionTypeValues } from "../../constants";
 
@@ -19,7 +19,9 @@ export interface ISqlDatabaseConnectionWizardContext extends IActionContext, Par
 
     // SQL
     newSqlServerName?: string;
+    newSqlDatabaseName?: string;
     newSqlAdminUsername?: string;
     newSqlAdminPassword?: string;
     sqlServer?: Server;
+    sqlDatabase?: Database;
 }

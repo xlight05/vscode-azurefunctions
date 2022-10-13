@@ -184,6 +184,7 @@ export namespace netheriteUtils {
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
+        // Todo - maybe always prompt on debug in case the user wants to switch local.settings.json to emulator mode?
         if (!hasEventHubsConnection) {
             promptSteps.push(new EventHubsConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }));
             executeSteps.push(new EventHubsConnectionExecuteStep(options?.saveConnectionAsEnvVariable));

@@ -48,7 +48,7 @@ export class SqlServerListStep<T extends ISqlDatabaseConnectionWizardContext> ex
 
     private async getQuickPicks(serverTask: Promise<Server[]>): Promise<IAzureQuickPickItem<Server | undefined>[]> {
         const picks: IAzureQuickPickItem<Server | undefined>[] = [{
-            label: localize('newEventHubsNamespace', '$(plus) Create new SQL server'),
+            label: localize('newSqlServer', '$(plus) Create new SQL server'),
             description: '',
             data: undefined
         }];
