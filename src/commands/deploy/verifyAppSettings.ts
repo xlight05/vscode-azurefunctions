@@ -9,18 +9,18 @@ import { IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
 import { ConnectionKey, ConnectionKeyValues, DurableBackend, DurableBackendValues, extensionVersionKey, ProjectLanguage, runFromPackageKey, workerRuntimeKey } from '../../constants';
 import { ext } from '../../extensionVariables';
-import { getLocalConnectionString } from '../../funcConfig/local.settings';
 import { FuncVersion, tryParseFuncVersion } from '../../FuncVersion';
 import { localize } from '../../localize';
 import { SlotTreeItem } from '../../tree/SlotTreeItem';
 import { isKnownWorkerRuntime, promptToUpdateDotnetRuntime, tryGetFunctionsWorkerRuntimeForProject } from '../../vsCodeConfig/settings';
+import { IFunctionDeployContext } from './IFunctionDeployContext';
 
 /**
  * Just putting a few booleans in an object to avoid ordering mistakes if we passed them as individual params
  */
 type VerifyAppSettingBooleans = { doRemoteBuild: boolean | undefined; isConsumption: boolean };
 
-export async function verifyAppSettings(context: IActionContext, node: SlotTreeItem, projectPath: string | undefined, version: FuncVersion, language: ProjectLanguage, bools: VerifyAppSettingBooleans, durableStorageType: DurableBackendValues | undefined): Promise<void> {
+export async function verifyAppSettings(context: IActionContext & Partial<IFunctionDeployContext>, node: SlotTreeItem, projectPath: string | undefined, version: FuncVersion, language: ProjectLanguage, bools: VerifyAppSettingBooleans, durableStorageType: DurableBackendValues | undefined): Promise<void> {
     const client = await node.site.createClient(context);
     const appSettings: StringDictionary = await client.listApplicationSettings();
     if (appSettings.properties) {
@@ -36,7 +36,7 @@ export async function verifyAppSettings(context: IActionContext, node: SlotTreeI
             updateAppSettings ||= verifyRunFromPackage(context, node.site, appSettings.properties);
         }
 
-        const updatedRemoteConnection = await verifyAndUpdateConnectionStrings(context, durableStorageType, appSettings.properties, projectPath);
+        const updatedRemoteConnection = await verifyAndUpdateAppConnectionStrings(context, durableStorageType, appSettings.properties);
         updateAppSettings ||= updatedRemoteConnection;
 
         if (updateAppSettings) {
@@ -47,14 +47,12 @@ export async function verifyAppSettings(context: IActionContext, node: SlotTreeI
     }
 }
 
-export async function verifyAndUpdateConnectionStrings(context: IActionContext, durableStorageType: DurableBackendValues | undefined, remoteProperties: { [propertyName: string]: string }, projectPath: string | undefined): Promise<boolean> {
+export async function verifyAndUpdateAppConnectionStrings(context: IActionContext & Partial<IFunctionDeployContext>, durableStorageType: DurableBackendValues | undefined, remoteProperties: { [propertyName: string]: string }): Promise<boolean> {
     let didChange: boolean = false;
     switch (durableStorageType) {
         case DurableBackend.Netherite:
-            const localEventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
-            const updatedNetheriteConnection: boolean = await updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.EventHub, localEventHubsConnection);
+            const updatedNetheriteConnection: boolean = updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.EventHub, context.eventHubConnectionForDeploy);
             didChange ||= updatedNetheriteConnection;
-            delete process.env[ConnectionKey.EventHub];
             break;
         case DurableBackend.SQL:
             break;
@@ -62,18 +60,15 @@ export async function verifyAndUpdateConnectionStrings(context: IActionContext, 
         default:
     }
 
-    const localStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
-    const updatedStorageConnection = await updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.Storage, localStorageConnection);
+    const updatedStorageConnection = updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.Storage, context.azureWebJobsConnectionForDeploy);
     didChange ||= updatedStorageConnection;
-    delete process.env[ConnectionKey.Storage];
 
     return didChange;
 }
 
-export async function updateConnectionStringIfNeeded(context: IActionContext, remoteProperties: { [propertyName: string]: string }, propertyName: ConnectionKeyValues, newValue: string | undefined): Promise<boolean> {
-    const remoteValue = remoteProperties[propertyName];
-    if (remoteValue !== newValue) {
-        remoteProperties[propertyName] = newValue || '';
+export function updateConnectionStringIfNeeded(context: IActionContext & Partial<IFunctionDeployContext>, remoteProperties: { [propertyName: string]: string }, propertyName: ConnectionKeyValues, newValue: string | undefined): boolean {
+    if (newValue) {
+        remoteProperties[propertyName] = newValue;
         context.telemetry.properties[`update${propertyName}`] = String(true);
         return true;
     } else {
@@ -81,7 +76,7 @@ export async function updateConnectionStringIfNeeded(context: IActionContext, re
     }
 }
 
-export async function verifyVersionAndLanguage(context: IActionContext, projectPath: string | undefined, siteName: string, localVersion: FuncVersion, localLanguage: ProjectLanguage, remoteProperties: { [propertyName: string]: string }): Promise<void> {
+export async function verifyVersionAndLanguage(context: IActionContext & Partial<IFunctionDeployContext>, projectPath: string | undefined, siteName: string, localVersion: FuncVersion, localLanguage: ProjectLanguage, remoteProperties: { [propertyName: string]: string }): Promise<void> {
     const rawAzureVersion: string = remoteProperties[extensionVersionKey];
     const azureVersion: FuncVersion | undefined = tryParseFuncVersion(rawAzureVersion);
     const azureWorkerRuntime: string | undefined = remoteProperties[workerRuntimeKey];
@@ -119,7 +114,7 @@ export async function verifyVersionAndLanguage(context: IActionContext, projectP
  * Automatically set to 1 on windows plans because it has significant perf improvements
  * https://github.com/microsoft/vscode-azurefunctions/issues/1465
  */
-function verifyRunFromPackage(context: IActionContext, site: ParsedSite, remoteProperties: { [propertyName: string]: string }): boolean {
+function verifyRunFromPackage(context: IActionContext & Partial<IFunctionDeployContext>, site: ParsedSite, remoteProperties: { [propertyName: string]: string }): boolean {
     const shouldAddSetting: boolean = !remoteProperties[runFromPackageKey];
     if (shouldAddSetting) {
         remoteProperties[runFromPackageKey] = '1';
@@ -130,7 +125,7 @@ function verifyRunFromPackage(context: IActionContext, site: ParsedSite, remoteP
     return shouldAddSetting;
 }
 
-function verifyLinuxRemoteBuildSettings(context: IActionContext, remoteProperties: { [propertyName: string]: string }, bools: VerifyAppSettingBooleans): boolean {
+function verifyLinuxRemoteBuildSettings(context: IActionContext & Partial<IFunctionDeployContext>, remoteProperties: { [propertyName: string]: string }, bools: VerifyAppSettingBooleans): boolean {
     let hasChanged: boolean = false;
 
     const keysToRemove: string[] = [];

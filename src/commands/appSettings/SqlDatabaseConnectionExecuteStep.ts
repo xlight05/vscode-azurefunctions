@@ -5,25 +5,24 @@
 
 import { AzureWizardExecuteStep } from '@microsoft/vscode-azext-utils';
 import { ConnectionKey, ConnectionType } from '../../constants';
-import { getLocalConnectionString, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
+import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getSqlDatabaseConnectionString } from '../../utils/azure';
 import { ISqlDatabaseConnectionWizardContext } from './ISqlDatabaseConnectionWizardContext';
 
 export class SqlDatabaseConnectionExecuteStep<T extends ISqlDatabaseConnectionWizardContext> extends AzureWizardExecuteStep<T> {
     public priority: number = 240;
 
-    public constructor(private _saveAsProcessEnvVariable?: boolean) {
+    public constructor(private _setConnectionForDeploy?: boolean) {
         super();
     }
 
     public async execute(context: T): Promise<void> {
         const value: string = (await getSqlDatabaseConnectionString(context)).connectionString;
 
-        const currentSqlConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL, context.projectPath);
-        if (!currentSqlConnection || !this._saveAsProcessEnvVariable) {
-            await setLocalAppSetting(context, context.projectPath, ConnectionKey.SQL, value, MismatchBehavior.Overwrite);
+        if (this._setConnectionForDeploy) {
+            context.sqlDbConnectionForDeploy = value;
         } else {
-            process.env[ConnectionKey.SQL] = value;
+            await setLocalAppSetting(context, context.projectPath, ConnectionKey.SQL, value, MismatchBehavior.Overwrite);
         }
     }
 

@@ -9,4 +9,5 @@ import { ConnectionTypeValues } from "../../constants";
 export interface IAzureWebJobsStorageWizardContext extends IActionContext, Partial<ISubscriptionContext> {
     projectPath: string;
     azureWebJobsStorageType?: ConnectionTypeValues;
+    azureWebJobsConnectionForDeploy?: string;
 }

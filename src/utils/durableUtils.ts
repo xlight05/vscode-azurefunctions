@@ -180,14 +180,14 @@ export namespace netheriteUtils {
         const eventHubName: string | undefined = await getEventHubName(projectPath);
         const partitionCount: number | undefined = await getPartitionCount(projectPath);
 
-        const wizardContext: IEventHubsConnectionWizardContext = { ...context, projectPath };
+        const wizardContext: IEventHubsConnectionWizardContext = Object.assign(context, { projectPath });
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
         // Todo - maybe always prompt on debug in case the user wants to switch local.settings.json to emulator mode?
         if (!hasEventHubsConnection) {
             promptSteps.push(new EventHubsConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }));
-            executeSteps.push(new EventHubsConnectionExecuteStep(options?.saveConnectionAsEnvVariable));
+            executeSteps.push(new EventHubsConnectionExecuteStep(options?.setConnectionForDeploy));
         }
         if (!eventHubName) {
             promptSteps.push(new NetheriteEventHubNameStep());
@@ -205,6 +205,7 @@ export namespace netheriteUtils {
 
         await wizard.prompt();
         await wizard.execute();
+        console.log('placeholder');
     }
 
     export function getDefaultNetheriteTaskConfig(hubName?: string, partitionCount?: number): INetheriteTaskJson {

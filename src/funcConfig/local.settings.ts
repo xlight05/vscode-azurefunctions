@@ -47,7 +47,7 @@ export async function validateStorageConnection(context: IActionContext, options
 
     const currentStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
     const hasStorageConnection: boolean = !!currentStorageConnection && currentStorageConnection !== localStorageEmulatorConnectionString;
-    if (hasStorageConnection && options?.saveConnectionAsEnvVariable) {
+    if (hasStorageConnection && options?.setConnectionForDeploy) {
         process.env[ConnectionKey.Storage] = currentStorageConnection;
         return;
     }
@@ -55,7 +55,7 @@ export async function validateStorageConnection(context: IActionContext, options
     const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
     const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
         promptSteps: [new AzureWebJobsStoragePromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true })],
-        executeSteps: [new AzureWebJobsStorageExecuteStep(options?.saveConnectionAsEnvVariable)]
+        executeSteps: [new AzureWebJobsStorageExecuteStep(options?.setConnectionForDeploy)]
     });
     await wizard.prompt();
     await wizard.execute();

@@ -24,4 +24,6 @@ export interface ISqlDatabaseConnectionWizardContext extends IActionContext, Par
     newSqlAdminPassword?: string;
     sqlServer?: Server;
     sqlDatabase?: Database;
+
+    sqlDbConnectionForDeploy?: string;
 }

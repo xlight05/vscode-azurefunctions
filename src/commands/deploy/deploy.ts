@@ -7,7 +7,7 @@ import { SiteConfigResource, StringDictionary } from '@azure/arm-appservice';
 import { deploy as innerDeploy, getDeployFsPath, getDeployNode, IDeployContext, IDeployPaths, showDeployConfirmation, SiteClient } from '@microsoft/vscode-azext-azureappservice';
 import { DialogResponses, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
-import { ConnectionKey, deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, localStorageEmulatorConnectionString, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
+import { ConnectionKey, ConnectionType, deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, localStorageEmulatorConnectionString, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { getLocalConnectionString, validateStorageConnection } from '../../funcConfig/local.settings';
 import { addLocalFuncTelemetry } from '../../funcCoreTools/getLocalFuncCoreToolsVersion';
@@ -85,7 +85,7 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
     switch (durableStorageType) {
         case DurableBackend.Netherite:
             if (!shouldValidateNetherite) break;
-            await netheriteUtils.validateConnection(context, { saveConnectionAsEnvVariable: true });
+            await netheriteUtils.validateConnection(context, { setConnectionForDeploy: true, preSelectedConnectionType: ConnectionType.Azure });
             break;
         case DurableBackend.SQL:
             break;
@@ -94,7 +94,7 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
     }
 
     if (shouldValidateStorage) {
-        await validateStorageConnection(context, { saveConnectionAsEnvVariable: true });
+        await validateStorageConnection(context, { setConnectionForDeploy: true, preSelectedConnectionType: ConnectionType.Azure });
     }
 
     if (getWorkspaceSetting<boolean>('showDeployConfirmation', context.workspaceFolder.uri.fsPath) && !context.isNewApp && isZipDeploy) {

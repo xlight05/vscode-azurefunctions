@@ -3,13 +3,10 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { ConnectionTypeValues } from "../../constants";
+import { IDeployContext } from "@microsoft/vscode-azext-azureappservice";
 
-export interface IConnectionPromptOptions {
-    preSelectedConnectionType?: ConnectionTypeValues;
-    suppressSkipForNow?: boolean;
-}
-
-export interface IValidateConnectionOptions extends IConnectionPromptOptions {
-    setConnectionForDeploy?: boolean;
+export interface IFunctionDeployContext extends IDeployContext {
+    azureWebJobsConnectionForDeploy?: string;
+    eventHubConnectionForDeploy?: string;
+    sqlDbConnectionForDeploy?: string;
 }
