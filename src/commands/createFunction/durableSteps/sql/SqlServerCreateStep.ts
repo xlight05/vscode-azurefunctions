@@ -35,11 +35,11 @@ export class SqlServerCreateStep<T extends ISqlDatabaseConnectionWizardContext> 
             //     login: context.userId,
             //     sid: '....',
             //     tenantId: context.tenantId,
-            //     azureADOnlyAuthentication: true
+            //     azureADOnlyAuthentication: false
             // }
         };
 
-        context.sqlDatabase = await client.servers.beginCreateOrUpdateAndWait(rgName, newServerName, serverOptions);
+        context.sqlServer = await client.servers.beginCreateOrUpdateAndWait(rgName, newServerName, serverOptions);
         ext.outputChannel.appendLog(created);
     }
 
