@@ -66,7 +66,7 @@ export class ScriptFunctionCreateStep extends FunctionCreateStepBase<IScriptFunc
     private async _installDependenciesIfNeeded(context: IScriptFunctionWizardContext): Promise<void> {
         try {
             // Install Durable Functions dependency
-            if (context.durableStorageType) {
+            if (context.newDurableStorageType) {
                 await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'npm', 'install', 'durable-functions');
             }
         } catch {

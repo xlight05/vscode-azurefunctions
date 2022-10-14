@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzureWizardExecuteStep } from '@microsoft/vscode-azext-utils';
+import { AzureWizardExecuteStep, nonNullProp } from '@microsoft/vscode-azext-utils';
 import { ConnectionKey, ConnectionType } from '../../constants';
 import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getSqlDatabaseConnectionString } from '../../utils/azure';
@@ -17,7 +17,13 @@ export class SqlDatabaseConnectionExecuteStep<T extends ISqlDatabaseConnectionWi
     }
 
     public async execute(context: T): Promise<void> {
-        const value: string = (await getSqlDatabaseConnectionString(context)).connectionString;
+        let value: string;
+
+        if (context.sqlDbConnectionType === ConnectionType.Azure) {
+            value = (await getSqlDatabaseConnectionString(context)).connectionString;
+        } else {
+            value = nonNullProp(context, 'nonAzureSqlConnection');
+        }
 
         if (this._setConnectionForDeploy) {
             context.sqlDbConnectionForDeploy = value;
@@ -27,6 +33,6 @@ export class SqlDatabaseConnectionExecuteStep<T extends ISqlDatabaseConnectionWi
     }
 
     public shouldExecute(context: T): boolean {
-        return !!context.sqlDbConnectionType && context.sqlDbConnectionType !== ConnectionType.Skip;
+        return !!context.sqlDbConnectionType && context.sqlDbConnectionType !== ConnectionType.None;
     }
 }

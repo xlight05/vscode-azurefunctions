@@ -75,7 +75,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
     }
 
     private async _configureForDurableStorageIfNeeded(context: T): Promise<void> {
-        if (!context.durableStorageType) {
+        if (!context.newDurableStorageType) {
             return;
         }
 
@@ -84,7 +84,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath) as IHostJsonV2;
             hostJson.extensions ??= {};
 
-            switch (context.durableStorageType) {
+            switch (context.newDurableStorageType) {
                 case DurableBackend.Storage:
                     hostJson.extensions.durableTask = durableUtils.getDefaultStorageTaskConfig();
                     break;

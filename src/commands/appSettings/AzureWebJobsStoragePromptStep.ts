@@ -42,9 +42,9 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
         if (result === selectStorageButton) {
             context.azureWebJobsStorageType = ConnectionType.Azure;
         } else if (result === useEmulatorButton) {
-            context.azureWebJobsStorageType = ConnectionType.Emulator;
+            context.azureWebJobsStorageType = ConnectionType.NonAzure;
         } else {
-            context.azureWebJobsStorageType = ConnectionType.Skip;
+            context.azureWebJobsStorageType = ConnectionType.None;
         }
 
         context.telemetry.properties.azureWebJobsStorageType = context.azureWebJobsStorageType;

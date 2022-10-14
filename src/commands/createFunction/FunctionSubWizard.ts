@@ -94,7 +94,7 @@ export class FunctionSubWizard {
                     break;
             }
 
-            switch (context.durableStorageType) {
+            switch (context.newDurableStorageType) {
                 case DurableBackend.Netherite:
                     promptSteps.push(new EventHubsConnectionPromptStep(), new NetheriteEventHubNameStep(), new NetheriteEventHubPartitionsStep());
                     executeSteps.push(new EventHubsConnectionExecuteStep(), new NetheriteConfigureHostStep());
@@ -107,7 +107,7 @@ export class FunctionSubWizard {
                 default:
             }
 
-            if (context.durableStorageType || !template.isHttpTrigger && !template.isSqlBindingTemplate && !canValidateAzureWebJobStorageOnDebug(context.language) && !await getLocalConnectionString(context, ConnectionKey.Storage, context.projectPath)) {
+            if (context.newDurableStorageType || !template.isHttpTrigger && !template.isSqlBindingTemplate && !canValidateAzureWebJobStorageOnDebug(context.language) && !await getLocalConnectionString(context, ConnectionKey.Storage, context.projectPath)) {
                 promptSteps.push(new AzureWebJobsStoragePromptStep());
                 executeSteps.push(new AzureWebJobsStorageExecuteStep());
             }

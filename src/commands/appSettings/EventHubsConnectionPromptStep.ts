@@ -43,9 +43,9 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
         if (result === selectEventNamespaceButton) {
             context.eventHubConnectionType = ConnectionType.Azure;
         } else if (result === useEmulatorButton) {
-            context.eventHubConnectionType = ConnectionType.Emulator;
+            context.eventHubConnectionType = ConnectionType.NonAzure;
         } else {
-            context.eventHubConnectionType = ConnectionType.Skip;
+            context.eventHubConnectionType = ConnectionType.None;
         }
 
         context.telemetry.properties.eventHubConnectionType = context.eventHubConnectionType;

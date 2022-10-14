@@ -17,7 +17,7 @@ export class NetheriteEventHubNameStep<T extends IEventHubsConnectionWizardConte
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.newEventHubName && context.eventHubConnectionType !== ConnectionType.Skip;
+        return !context.newEventHubName && context.eventHubConnectionType !== ConnectionType.None;
     }
 
     private async validateInput(name: string | undefined): Promise<string | undefined> {

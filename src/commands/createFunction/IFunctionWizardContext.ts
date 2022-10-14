@@ -15,8 +15,8 @@ export interface IFunctionWizardContext extends Partial<ISubscriptionContext>, I
     functionName?: string;
 
     // Durable Functions
-    hasDurableStorage?: boolean;  // Does the existing project already have durable storage setup
-    durableStorageType?: DurableBackendValues;  // Only defined for projects that need a durable storage config added
+    hasDurableStorage?: boolean;
+    newDurableStorageType?: DurableBackendValues;
 }
 
 export function setBindingSetting(context: IFunctionWizardContext, setting: IBindingSetting, value: BindingSettingValue): void {

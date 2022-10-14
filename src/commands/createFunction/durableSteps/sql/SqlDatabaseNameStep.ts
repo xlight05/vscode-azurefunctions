@@ -8,6 +8,6 @@ export class SqlDatabaseNameStep<T extends ISqlDatabaseConnectionWizardContext> 
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.newSqlDatabaseName && context.sqlDbConnectionType !== ConnectionType.Skip;
+        return !context.newSqlDatabaseName && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 }

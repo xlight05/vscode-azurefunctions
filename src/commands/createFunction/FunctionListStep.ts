@@ -61,7 +61,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
 
         const needsStorageSetup: boolean = !!context.functionTemplate && durableUtils.requiresDurableStorage(context.functionTemplate.id) && !context.hasDurableStorage;
         if (needsStorageSetup) {
-            context.durableStorageType = await durableUtils.promptForStorageType(context);
+            context.newDurableStorageType = await durableUtils.promptForStorageType(context);
         }
 
         if (isV2PythonModel) {

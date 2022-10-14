@@ -41,7 +41,7 @@ export class SqlDatabaseListStep<T extends ISqlDatabaseConnectionWizardContext> 
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.sqlDatabase && !!context.resourceGroup && !!context.sqlServer && context.sqlDbConnectionType !== ConnectionType.Skip;
+        return !context.sqlDatabase && !!context.resourceGroup && !!context.sqlServer && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 
     private async getQuickPicks(dbTask: Promise<Server[]>): Promise<IAzureQuickPickItem<Database | undefined>[]> {

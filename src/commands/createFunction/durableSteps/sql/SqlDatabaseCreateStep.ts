@@ -27,15 +27,21 @@ export class SqlDatabaseCreateStep<T extends ISqlDatabaseConnectionWizardContext
         ext.outputChannel.appendLog(creating);
         progress.report({ message: creating });
 
-        const databaseParams: Database = {
+        const dbParams: Database = {
+            sku: {
+                name: 'GP_S_Gen5',
+                tier: 'GeneralPurpose',
+                family: 'Gen5',
+                capacity: 1
+            },
             location: (await LocationListStep.getLocation(<ILocationWizardContext>context)).name,
-        }
+        };
 
-        context.sqlDatabase = await client.databases.beginCreateOrUpdateAndWait(rgName, serverName, newDatabaseName, databaseParams);
+        context.sqlDatabase = await client.databases.beginCreateOrUpdateAndWait(rgName, serverName, newDatabaseName, dbParams);
         ext.outputChannel.appendLog(created);
     }
 
     public shouldExecute(context: T): boolean {
-        return !!context.resourceGroup && !!context.newSqlDatabaseName && LocationListStep.hasLocation(<ILocationWizardContext>context) && context.sqlDbConnectionType !== ConnectionType.Skip;
+        return !!context.resourceGroup && !!context.newSqlDatabaseName && LocationListStep.hasLocation(<ILocationWizardContext>context) && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 }

@@ -85,8 +85,12 @@ export async function getEventHubsConnectionString(context: IEventHubsConnection
 export async function getSqlDatabaseConnectionString(context: ISqlDatabaseConnectionWizardContext): Promise<IResourceResult> {
     const serverName: string = nonNullValue(context.sqlServer?.name);
     const dbName: string = nonNullValue(context.sqlDatabase?.name);
-    const username: string = context.sqlServer?.administratorLogin || '<Insert Username>';
-    const password: string = context.sqlServer?.administratorLoginPassword || '<Insert Password>';
+    const username: string | undefined = context.sqlServer?.administratorLogin;
+    const password: string | undefined = context.sqlServer?.administratorLoginPassword;
+
+    if (!username || !password) {
+        throw new Error(localize('unableToFindSqlConnection', 'We were unable to locate your admin username and password to generate your SQL connection, please add these credentials to your SQL server to proceed.'));
+    }
 
     return {
         name: dbName,

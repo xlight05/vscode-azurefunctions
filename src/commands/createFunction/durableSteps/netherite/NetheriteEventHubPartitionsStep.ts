@@ -21,6 +21,6 @@ export class NetheriteEventHubPartitionsStep<T extends IEventHubsConnectionWizar
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.partitionCount && context.eventHubConnectionType !== ConnectionType.Skip;
+        return !context.partitionCount && context.eventHubConnectionType !== ConnectionType.None;
     }
 }

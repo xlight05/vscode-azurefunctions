@@ -18,7 +18,7 @@ export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizard
 
     public async execute(context: T): Promise<void> {
         let value: string;
-        if (context.eventHubConnectionType === ConnectionType.Emulator) {
+        if (context.eventHubConnectionType === ConnectionType.NonAzure) {
             value = localEventHubsEmulatorConnectionString;
         } else {
             value = (await getEventHubsConnectionString(<T & ISubscriptionContext>context)).connectionString;
@@ -32,6 +32,6 @@ export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizard
     }
 
     public shouldExecute(context: T): boolean {
-        return !!context.eventHubConnectionType && context.eventHubConnectionType !== ConnectionType.Skip;
+        return !!context.eventHubConnectionType && context.eventHubConnectionType !== ConnectionType.None;
     }
 }
