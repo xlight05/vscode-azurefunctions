@@ -57,7 +57,7 @@ export class SqlServerPasswordAuthStep<T extends ISqlDatabaseConnectionWizardCon
         if (!validateUtils.meetsBasePasswordStrength(password)) {
             return localize('invalidPasswordStrength', 'Your password must contain three of the following - uppercase, lowercase, numbers, and symbols.');
         }
-        if (validateUtils.passwordOverlapsLogin(password, login, 3)) {
+        if (validateUtils.passwordOverlapsLogin(password, login)) {
             return localize('passwordOverlapsLogin', 'Your password cannot share 3 or more consecutive characters with your login.');
         }
 

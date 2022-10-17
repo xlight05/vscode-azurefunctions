@@ -4,7 +4,6 @@
  *--------------------------------------------------------------------------------------------*/
 
 export namespace validateUtils {
-    // Inclusive between, can be supplied with or without limits
     export function isValidLength(value: string, lower?: number, upper?: number): boolean {
         const thirtyTwoBitMaxSafeInteger = 2147483647;
 
@@ -54,10 +53,10 @@ export namespace validateUtils {
     }
 
     /*
-        Your password cannot contain all or part of the login name.
+        Per the Azure Portal... your password cannot contain all or part of the login name.
         Part of a login name is defined as some number of consecutive alphanumeric characters.
     */
-    export function passwordOverlapsLogin(password: string, login: string, consecutiveChars: number) {
+    export function passwordOverlapsLogin(password: string, login: string, consecutiveChars: number = 3): boolean {
         const consecutiveCharSet = new Set<string>();
 
         // Iterate over login and build consecutive char set
