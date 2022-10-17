@@ -5,14 +5,15 @@
 
 import { AzureWizardPromptStep } from '@microsoft/vscode-azext-utils';
 import { ConnectionType } from '../../../../constants';
-import { localize } from '../../../../localize';
+import { invalidLength, invalidLowerCaseAlphanumericWithHyphens, localize } from '../../../../localize';
+import { validateUtils } from '../../../../utils/validateUtils';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 
 export class NetheriteEventHubNameStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
     public async prompt(context: T): Promise<void> {
         context.newEventHubName = (await context.ui.showInputBox({
             prompt: localize('eventHubNamePrompt', 'Enter a name for the new event hub.'),
-            validateInput: async (value: string | undefined): Promise<string | undefined> => await this.validateInput(value)
+            validateInput: (value: string | undefined) => this.validateInput(value)
         })).trim();
     }
 
@@ -20,14 +21,15 @@ export class NetheriteEventHubNameStep<T extends IEventHubsConnectionWizardConte
         return !context.newEventHubName && context.eventHubConnectionType !== ConnectionType.None;
     }
 
-    private async validateInput(name: string | undefined): Promise<string | undefined> {
+    private validateInput(name: string | undefined): string | undefined {
         name = name ? name.trim() : '';
 
-        // Todo:  validateInput regexp + add localize string to constants if needed
-        if (!/^[a-z0-9]([-a-z0-9]*[a-z0-9])?$/.test(name)) {
-            return localize('invalidChar', `A name must consist of lower case alphanumeric characters or '-', and must start and end with an alphanumeric character.`);
+        if (!validateUtils.isValidLength(name, 1, 256)) {
+            return invalidLength('1', '256');
         }
-
+        if (!validateUtils.isLowerCaseAlphanumericWithHypens(name)) {
+            return invalidLowerCaseAlphanumericWithHyphens;
+        }
         return undefined;
     }
 }

@@ -19,10 +19,10 @@ import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSte
 import { NetheriteEventHubPartitionsStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubPartitionsStep";
 import { SqlDatabaseListStep } from "../commands/createFunction/durableSteps/sql/SqlDatabaseListStep";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
-import { ConnectionKey, DurableBackend, DurableBackendValues, emptyWorkspace, hostFileName, localEventHubsEmulatorConnectionString, ProjectLanguage } from "../constants";
+import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, localEventHubsEmulatorConnectionString, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { getLocalConnectionString } from "../funcConfig/local.settings";
-import { localize } from "../localize";
+import { emptyWorkspace, localize } from "../localize";
 import { findFiles, getWorkspaceRootPath } from "./workspace";
 
 export namespace durableUtils {
@@ -182,7 +182,6 @@ export namespace netheriteUtils {
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
-        // Todo - maybe always prompt on debug in case the user wants to switch local.settings.json to emulator mode?
         if (!hasEventHubsConnection) {
             promptSteps.push(new EventHubsConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }));
             executeSteps.push(new EventHubsConnectionExecuteStep(options?.setConnectionForDeploy));

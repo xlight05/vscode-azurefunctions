@@ -6,9 +6,9 @@
 import { StorageAccountKind, StorageAccountListStep, StorageAccountPerformance, StorageAccountReplication } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardPromptStep, ISubscriptionActionContext, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import { MessageItem } from 'vscode';
-import { ConnectionType, ConnectionTypeValues, skipForNow, useEmulator } from '../../constants';
+import { ConnectionType, ConnectionTypeValues } from '../../constants';
 import { ext } from '../../extensionVariables';
-import { localize } from '../../localize';
+import { localize, skipForNow, useEmulator } from '../../localize';
 import { IAzureWebJobsStorageWizardContext } from './IAzureWebJobsStorageWizardContext';
 import { IConnectionPromptOptions } from './IConnectionPrompOptions';
 export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardContext> extends AzureWizardPromptStep<T> {
@@ -23,13 +23,13 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
             return;
         }
 
-        const selectStorageButton: MessageItem = { title: localize('selectStorageAccount', 'Select Storage Account') };
+        const connectStorageButton: MessageItem = { title: localize('connectStorageAccount', 'Connect Storage Account') };
         const useEmulatorButton: MessageItem = { title: useEmulator };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
-        const message: string = localize('selectAzureWebJobsStorage', 'In order to proceed, you must select a storage account for internal use by the Azure Functions runtime.');
+        const message: string = localize('connectAzureWebJobsStorage', 'In order to proceed, you must connect a storage account for internal use by the Azure Functions runtime.');
 
-        const buttons: MessageItem[] = [selectStorageButton];
+        const buttons: MessageItem[] = [connectStorageButton];
         if (process.platform === 'win32') {
             // Only show on Windows until Azurite is officially supported: https://github.com/Azure/azure-functions-core-tools/issues/1247
             buttons.push(useEmulatorButton);
@@ -39,7 +39,7 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
         }
 
         const result: MessageItem = await context.ui.showWarningMessage(message, { modal: true }, ...buttons);
-        if (result === selectStorageButton) {
+        if (result === connectStorageButton) {
             context.azureWebJobsStorageType = ConnectionType.Azure;
         } else if (result === useEmulatorButton) {
             context.azureWebJobsStorageType = ConnectionType.NonAzure;
@@ -53,7 +53,8 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
     public shouldPrompt(context: T & { eventHubConnectionType?: ConnectionTypeValues, sqlDbConnectionType?: ConnectionTypeValues }): boolean {
         if (context.eventHubConnectionType) {
             context.azureWebJobsStorageType = context.eventHubConnectionType;
-        } else if (context.sqlDbConnectionType) {
+        }
+        if (context.sqlDbConnectionType === ConnectionType.Azure || context.sqlDbConnectionType === ConnectionType.None) {
             context.azureWebJobsStorageType = context.sqlDbConnectionType;
         }
         return !context.azureWebJobsStorageType;

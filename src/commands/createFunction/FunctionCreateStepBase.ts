@@ -6,11 +6,11 @@
 import { AzExtFsExtra, AzureWizardExecuteStep, callWithTelemetryAndErrorHandling, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
 import { Progress, Uri, window, workspace } from 'vscode';
-import { DurableBackend, hostFileName, hostJsonConfigFailed } from '../../constants';
+import { DurableBackend, hostFileName } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { IHostJsonV2 } from '../../funcConfig/host';
 import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
-import { localize } from '../../localize';
+import { hostJsonConfigFailed, localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
 import { durableUtils, netheriteUtils, sqlUtils } from '../../utils/durableUtils';
 import { nonNullProp } from '../../utils/nonNull';

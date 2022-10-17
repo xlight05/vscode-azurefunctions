@@ -5,9 +5,9 @@
 
 import { AzureWizardPromptStep, ISubscriptionActionContext, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import { MessageItem } from 'vscode';
-import { ConnectionType, skipForNow, useEmulator } from '../../constants';
+import { ConnectionType } from '../../constants';
 import { ext } from '../../extensionVariables';
-import { localize } from '../../localize';
+import { localize, skipForNow, useEmulator } from '../../localize';
 import { EventHubsNamespaceListStep } from '../createFunction/durableSteps/netherite/EventHubsNamespaceListStep';
 import { IConnectionPromptOptions } from './IConnectionPrompOptions';
 import { IEventHubsConnectionWizardContext } from './IEventHubsConnectionWizardContext';
@@ -24,13 +24,13 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
             return;
         }
 
-        const selectEventNamespaceButton: MessageItem = { title: localize('selectEventHubNamespace', 'Select Event Hub Namespace') };
+        const connectEventNamespaceButton: MessageItem = { title: localize('connectEventHubsNamespace', 'Connect event hub namespace') };
         const useEmulatorButton: MessageItem = { title: useEmulator };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
-        const message: string = localize('selectEventHubsConnection', 'In order to proceed, you must select an Event Hub Namespace for internal use by the Azure Functions runtime.');
+        const message: string = localize('selectEventHubsNamespace', 'In order to proceed, you must connect an event hub namespace for internal use by the Azure Functions runtime.');
 
-        const buttons: MessageItem[] = [selectEventNamespaceButton];
+        const buttons: MessageItem[] = [connectEventNamespaceButton];
         if (process.platform === 'win32') {
             // Only show on Windows until Azurite is officially supported: https://github.com/Azure/azure-functions-core-tools/issues/1247
             buttons.push(useEmulatorButton);
@@ -40,7 +40,7 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
         }
 
         const result: MessageItem = await context.ui.showWarningMessage(message, { modal: true }, ...buttons);
-        if (result === selectEventNamespaceButton) {
+        if (result === connectEventNamespaceButton) {
             context.eventHubConnectionType = ConnectionType.Azure;
         } else if (result === useEmulatorButton) {
             context.eventHubConnectionType = ConnectionType.NonAzure;

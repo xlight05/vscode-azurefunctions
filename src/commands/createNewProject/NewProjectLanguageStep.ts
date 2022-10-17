@@ -5,8 +5,8 @@
 
 import { AzureWizardExecuteStep, AzureWizardPromptStep, IAzureQuickPickItem, IWizardOptions, UserCancelledError } from '@microsoft/vscode-azext-utils';
 import { QuickPickOptions } from 'vscode';
-import { previewPythonModel, ProjectLanguage, pysteinModelSetting, pythonNewModelPreview } from '../../constants';
-import { localize } from '../../localize';
+import { previewPythonModel, ProjectLanguage, pysteinModelSetting } from '../../constants';
+import { localize, pythonNewModelPreview } from '../../localize';
 import { nonNullProp } from '../../utils/nonNull';
 import { openUrl } from '../../utils/openUrl';
 import { isPythonV2Plus } from '../../utils/pythonUtils';

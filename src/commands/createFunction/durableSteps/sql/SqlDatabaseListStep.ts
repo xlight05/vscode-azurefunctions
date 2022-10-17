@@ -15,6 +15,11 @@ import { SqlDatabaseNameStep } from './SqlDatabaseNameStep';
 
 export class SqlDatabaseListStep<T extends ISqlDatabaseConnectionWizardContext> extends AzureWizardPromptStep<T> {
     public async prompt(context: T): Promise<void> {
+        // If we don't have a sql server built yet, that means we can skip the listing and go straight to naming the new database via subwizard
+        if (!context.sqlServer) {
+            return;
+        }
+
         const client: SqlManagementClient = await createSqlClient(<T & ISubscriptionContext>context);
         const rgName: string = nonNullValue(context.resourceGroup?.name);
         const serverName: string = nonNullValue(context.sqlServer?.name);
@@ -41,7 +46,7 @@ export class SqlDatabaseListStep<T extends ISqlDatabaseConnectionWizardContext> 
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.sqlDatabase && !!context.resourceGroup && !!context.sqlServer && context.sqlDbConnectionType === ConnectionType.Azure;
+        return !context.sqlDatabase && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 
     private async getQuickPicks(dbTask: Promise<Server[]>): Promise<IAzureQuickPickItem<Database | undefined>[]> {

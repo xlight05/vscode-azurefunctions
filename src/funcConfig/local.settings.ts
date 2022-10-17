@@ -10,8 +10,8 @@ import { AzureWebJobsStorageExecuteStep } from '../commands/appSettings/AzureWeb
 import { AzureWebJobsStoragePromptStep } from '../commands/appSettings/AzureWebJobsStoragePromptStep';
 import { IAzureWebJobsStorageWizardContext } from '../commands/appSettings/IAzureWebJobsStorageWizardContext';
 import { IValidateConnectionOptions } from '../commands/appSettings/IConnectionPrompOptions';
-import { ConnectionKey, ConnectionKeyValues, emptyWorkspace, localSettingsFileName, localStorageEmulatorConnectionString } from '../constants';
-import { localize } from '../localize';
+import { ConnectionKey, ConnectionKeyValues, localSettingsFileName, localStorageEmulatorConnectionString } from '../constants';
+import { emptyWorkspace, localize } from '../localize';
 import { parseJson } from '../utils/parseJson';
 import { getWorkspaceRootPath } from '../utils/workspace';
 

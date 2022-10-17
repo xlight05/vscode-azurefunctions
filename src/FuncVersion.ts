@@ -4,8 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { IActionContext, IAzureQuickPickItem, IAzureQuickPickOptions } from '@microsoft/vscode-azext-utils';
-import { recommended } from './constants';
-import { localize } from './localize';
+import { localize, recommended } from './localize';
 import { openUrl } from './utils/openUrl';
 
 export enum FuncVersion {

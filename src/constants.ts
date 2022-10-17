@@ -3,8 +3,6 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { localize } from "./localize";
-
 export const extensionId: string = 'ms-azuretools.vscode-azurefunctions';
 export const projectLanguageSetting: string = 'projectLanguage';
 export const projectLanguageModelSetting: string = 'projectLanguageModel';
@@ -127,18 +125,6 @@ export const extensionVersionKey: string = 'FUNCTIONS_EXTENSION_VERSION';
 export const runFromPackageKey: string = 'WEBSITE_RUN_FROM_PACKAGE';
 export const contentConnectionStringKey: string = 'WEBSITE_CONTENTAZUREFILECONNECTIONSTRING';
 export const contentShareKey: string = 'WEBSITE_CONTENTSHARE';
-
-export const local: string = localize('local', 'Local');
-export const remote: string = localize('remote', 'Remote');
-export const viewOutput: string = localize('viewOutput', 'View Output');
-export const previewDescription: string = localize('preview', '(Preview)');
-export const pythonNewModelPreview: string = localize('pythonNewModelPreview', 'Python (Programming Model V2)');
-export const npmInstallFailure: string = localize('npmInstallFailure', 'WARNING: Failed to install packages in your workspace. Run "npm install" manually instead.');
-export const hostJsonConfigFailed: string = localize('durableStorageConfigFailed', 'WARNING: Failed to configure your JSON files for durable storage, you may need to configure them manually or start from a clean project.');
-export const emptyWorkspace: string = localize('emptyWorkspace', 'Your workspace folder looks empty, please navigate to the root directory of your project.');
-export const useEmulator: string = localize('useEmulator', 'Use Local Emulator');
-export const skipForNow: string = localize('skipForNow', 'Skip For Now');
-export const recommended: string = localize('recommended', '(Recommended)');
 
 export const webProvider: string = 'Microsoft.Web';
 export const functionFilter = {

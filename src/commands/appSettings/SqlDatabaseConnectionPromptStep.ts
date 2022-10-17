@@ -5,9 +5,9 @@
 
 import { AzureWizardPromptStep, ISubscriptionActionContext, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import { MessageItem } from 'vscode';
-import { ConnectionType, skipForNow } from '../../constants';
+import { ConnectionType } from '../../constants';
 import { ext } from '../../extensionVariables';
-import { localize } from '../../localize';
+import { localize, skipForNow } from '../../localize';
 import { SqlServerListStep } from '../createFunction/durableSteps/sql/SqlServerListStep';
 import { IConnectionPromptOptions } from './IConnectionPrompOptions';
 import { ISqlDatabaseConnectionWizardContext } from './ISqlDatabaseConnectionWizardContext';
@@ -25,22 +25,22 @@ export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWiz
             return;
         }
 
-        const selectAzureDatabase: MessageItem = { title: localize('selectSqlDatabase', 'Select Azure SQL Database') };
-        const selectNonAzureDatabase: MessageItem = { title: localize('selectSqlDatabase', 'Select Non-Azure SQL Database') };
+        const connectAzureDatabase: MessageItem = { title: localize('connectSqlDatabase', 'Connect Azure SQL Database') };
+        const connectNonAzureDatabase: MessageItem = { title: localize('connectSqlDatabase', 'Connect Non-Azure SQL Database') };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
-        const message: string = localize('selectSqlDatabaseConnection', 'In order to proceed, you must select a SQL database for internal use by the Azure Functions runtime.');
+        const message: string = localize('selectSqlDatabaseConnection', 'In order to proceed, you must connect a SQL database for internal use by the Azure Functions runtime.');
 
-        const buttons: MessageItem[] = [selectAzureDatabase, selectNonAzureDatabase];
+        const buttons: MessageItem[] = [connectAzureDatabase, connectNonAzureDatabase];
 
         if (!this._options?.suppressSkipForNow) {
             buttons.push(skipForNowButton);
         }
 
         const result: MessageItem = await context.ui.showWarningMessage(message, { modal: true }, ...buttons);
-        if (result === selectAzureDatabase) {
+        if (result === connectAzureDatabase) {
             context.sqlDbConnectionType = ConnectionType.Azure;
-        } else if (result === selectNonAzureDatabase) {
+        } else if (result === connectNonAzureDatabase) {
             context.sqlDbConnectionType = ConnectionType.NonAzure;
         } else {
             context.sqlDbConnectionType = ConnectionType.None;
