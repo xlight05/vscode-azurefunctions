@@ -7,15 +7,15 @@ import { SiteConfigResource, StringDictionary } from '@azure/arm-appservice';
 import { deploy as innerDeploy, getDeployFsPath, getDeployNode, IDeployContext, IDeployPaths, showDeployConfirmation, SiteClient } from '@microsoft/vscode-azext-azureappservice';
 import { DialogResponses, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
-import { ConnectionKey, ConnectionType, deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, localStorageEmulatorConnectionString, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
+import { ConnectionKey, ConnectionKeyValues, ConnectionType, deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, localStorageEmulatorConnectionString, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { getLocalConnectionString, validateStorageConnection } from '../../funcConfig/local.settings';
 import { addLocalFuncTelemetry } from '../../funcCoreTools/getLocalFuncCoreToolsVersion';
-import { localize } from '../../localize';
+import { localize, overwriteRemoteConnection } from '../../localize';
 import { ResolvedFunctionAppResource } from '../../tree/ResolvedFunctionAppResource';
 import { SlotTreeItem } from '../../tree/SlotTreeItem';
 import { dotnetUtils } from '../../utils/dotnetUtils';
-import { durableUtils, netheriteUtils } from '../../utils/durableUtils';
+import { durableUtils, netheriteUtils, sqlUtils } from '../../utils/durableUtils';
 import { isPathEqual } from '../../utils/fs';
 import { getWorkspaceSetting } from '../../vsCodeConfig/settings';
 import { verifyInitForVSCode } from '../../vsCodeConfig/verifyInitForVSCode';
@@ -68,7 +68,7 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         context.deployMethod = 'zip';
     }
 
-    const [shouldValidateStorage, shouldValidateNetherite] = await shouldValidateConnection(context, client);
+    const [shouldValidateStorage, shouldValidateNetherite, shouldValidateSqlDb] = await shouldValidateConnections(context, client);
 
     const doRemoteBuild: boolean | undefined = getWorkspaceSetting<boolean>(remoteBuildSetting, deployPaths.effectiveDeployFsPath);
     actionContext.telemetry.properties.scmDoBuildDuringDeployment = String(doRemoteBuild);
@@ -88,6 +88,8 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
             await netheriteUtils.validateConnection(context, { setConnectionForDeploy: true, preSelectedConnectionType: ConnectionType.Azure });
             break;
         case DurableBackend.SQL:
+            if (!shouldValidateSqlDb) break;
+            await sqlUtils.validateConnection(context, { setConnectionForDeploy: true });
             break;
         case DurableBackend.Storage:
         default:
@@ -183,17 +185,37 @@ async function validateGlobSettings(context: IActionContext, fsPath: string): Pr
     }
 }
 
-export async function shouldValidateConnection(context: IActionContext, client: SiteClient, projectPath?: string): Promise<[boolean, boolean]> {
+export async function shouldValidateConnections(context: IActionContext, client: SiteClient, projectPath?: string): Promise<[boolean, boolean, boolean]> {
     const app: StringDictionary = await client.listApplicationSettings();
     const remoteStorageConnection: string | undefined = app?.properties?.[ConnectionKey.Storage];
     const remoteEventHubsConnection: string | undefined = app?.properties?.[ConnectionKey.EventHub];
+    const remoteSqlDbConnection: string | undefined = app?.properties?.[ConnectionKey.SQL];
 
     const localStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
     const localEventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
+    const localSqlDbConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL, projectPath);
 
-    // Todo: shouldValidate && !!remoteConnection, prompt user for overwrite
-    const shouldValidateStorage: boolean = !remoteStorageConnection || (!!localStorageConnection && localStorageConnection !== localStorageEmulatorConnectionString && remoteStorageConnection !== localStorageConnection);
-    const shouldValidateEventHubs: boolean = !remoteEventHubsConnection || (!!localEventHubsConnection && localEventHubsConnection !== localStorageEmulatorConnectionString && remoteEventHubsConnection !== localEventHubsConnection);
+    const shouldValidateStorage: boolean = !remoteStorageConnection || (!!localStorageConnection && localStorageConnection !== localStorageEmulatorConnectionString
+        && remoteStorageConnection !== localStorageConnection && await promptShouldOverwrite(context, ConnectionKey.Storage));
+    const shouldValidateEventHubs: boolean = !remoteEventHubsConnection || (!!localEventHubsConnection && localEventHubsConnection !== localStorageEmulatorConnectionString
+        && remoteEventHubsConnection !== localEventHubsConnection && await promptShouldOverwrite(context, ConnectionKey.EventHub));
+    const shouldValidateSqlDb: boolean = !remoteSqlDbConnection || (!!localSqlDbConnection && remoteSqlDbConnection !== localSqlDbConnection && await promptShouldOverwrite(context, ConnectionKey.SQL));
 
-    return [shouldValidateStorage, shouldValidateEventHubs];
+    return [shouldValidateStorage, shouldValidateEventHubs, shouldValidateSqlDb];
+}
+
+export async function promptShouldOverwrite(context: IActionContext, key: ConnectionKeyValues): Promise<boolean> {
+    const overwriteButton: vscode.MessageItem = { title: localize('overwrite', 'Overwrite') };
+    const skipButton: vscode.MessageItem = { title: localize('skip', 'Skip') };
+    const buttons: vscode.MessageItem[] = [overwriteButton, skipButton];
+
+    const message: string = overwriteRemoteConnection(key);
+
+    const result: vscode.MessageItem = await context.ui.showWarningMessage(message, { modal: true }, ...buttons);
+
+    if (result === overwriteButton) {
+        return true;
+    } else {
+        return false;
+    }
 }

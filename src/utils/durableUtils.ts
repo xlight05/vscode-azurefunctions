@@ -182,10 +182,13 @@ export namespace netheriteUtils {
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
-        if (!hasEventHubsConnection) {
+        if (hasEventHubsConnection && options?.setConnectionForDeploy) {
+            Object.assign(context, { eventHubConnectionForDeploy: eventHubsConnection });
+        } else {
             promptSteps.push(new EventHubsConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }));
             executeSteps.push(new EventHubsConnectionExecuteStep(options?.setConnectionForDeploy));
         }
+
         if (!eventHubName) {
             promptSteps.push(new NetheriteEventHubNameStep());
         }
@@ -226,8 +229,13 @@ export namespace sqlUtils {
             throw new Error(emptyWorkspace);
         }
 
-        const hasSqlDbConnection: boolean = !!(await getLocalConnectionString(context, ConnectionKey.SQL, projectPath));
+        const sqlDbConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL, projectPath);
+        const hasSqlDbConnection: boolean = !!sqlDbConnection;
+
         if (hasSqlDbConnection) {
+            if (options?.setConnectionForDeploy) {
+                Object.assign(context, { sqlDbConnectionForDeploy: sqlDbConnection });
+            }
             return;
         }
 

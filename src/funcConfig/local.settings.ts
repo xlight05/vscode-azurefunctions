@@ -47,8 +47,10 @@ export async function validateStorageConnection(context: IActionContext, options
 
     const currentStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
     const hasStorageConnection: boolean = !!currentStorageConnection && currentStorageConnection !== localStorageEmulatorConnectionString;
-    if (hasStorageConnection && options?.setConnectionForDeploy) {
-        process.env[ConnectionKey.Storage] = currentStorageConnection;
+    if (hasStorageConnection) {
+        if (options?.setConnectionForDeploy) {
+            Object.assign(context, { azureWebJobsConnectionForDeploy: currentStorageConnection });
+        }
         return;
     }
 

@@ -22,8 +22,10 @@ export interface IFunctionAppWizardContext extends IAppServiceWizardContext, ICr
     stackFilter?: string;
     newSiteStack?: FullFunctionAppStack;
 
-    hasAzureStorageConnection?: boolean;  // Detected a local settings storage connection string
-    hasEventHubsConnection?: boolean;  // Detected a local settings event hubs connection string
-
     durableStorageType?: DurableBackendValues;
+
+    // Detected local connection string
+    hasAzureStorageConnection?: boolean;
+    hasEventHubsConnection?: boolean;
+    hasSqlDbConnection?: boolean;
 }
