@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardPromptStep, IAzureQuickPickItem } from '@microsoft/vscode-azext-utils';
-import { ConnectionType, recommended } from '../../../../constants';
-import { localize } from '../../../../localize';
+import { ConnectionType } from '../../../../constants';
+import { localize, recommended } from '../../../../localize';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 
 export class NetheriteEventHubPartitionsStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
@@ -21,6 +21,6 @@ export class NetheriteEventHubPartitionsStep<T extends IEventHubsConnectionWizar
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.partitionCount && context.eventHubConnectionType !== ConnectionType.Skip;
+        return !context.partitionCount && context.eventHubConnectionType !== ConnectionType.None;
     }
 }

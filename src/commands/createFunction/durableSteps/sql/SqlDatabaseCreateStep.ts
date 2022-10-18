@@ -42,6 +42,6 @@ export class SqlDatabaseCreateStep<T extends ISqlDatabaseConnectionWizardContext
     }
 
     public shouldExecute(context: T): boolean {
-        return !!context.resourceGroup && !!context.newSqlDatabaseName && LocationListStep.hasLocation(<ILocationWizardContext>context) && context.sqlDbConnectionType !== ConnectionType.Skip;
+        return !!context.resourceGroup && !!context.newSqlDatabaseName && LocationListStep.hasLocation(<ILocationWizardContext>context) && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 }

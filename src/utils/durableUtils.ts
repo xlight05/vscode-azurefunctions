@@ -11,14 +11,18 @@ import { EventHubsConnectionExecuteStep } from "../commands/appSettings/EventHub
 import { EventHubsConnectionPromptStep } from "../commands/appSettings/EventHubsConnectionPromptStep";
 import { IValidateConnectionOptions } from "../commands/appSettings/IConnectionPrompOptions";
 import { IEventHubsConnectionWizardContext } from "../commands/appSettings/IEventHubsConnectionWizardContext";
+import { ISqlDatabaseConnectionWizardContext } from "../commands/appSettings/ISqlDatabaseConnectionWizardContext";
+import { SqlDatabaseConnectionExecuteStep } from "../commands/appSettings/SqlDatabaseConnectionExecuteStep";
+import { SqlDatabaseConnectionPromptStep } from "../commands/appSettings/SqlDatabaseConnectionPromptStep";
 import { NetheriteConfigureHostStep } from "../commands/createFunction/durableSteps/netherite/NetheriteConfigureHostStep";
 import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep";
 import { NetheriteEventHubPartitionsStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubPartitionsStep";
+import { SqlDatabaseListStep } from "../commands/createFunction/durableSteps/sql/SqlDatabaseListStep";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
-import { ConnectionKey, DurableBackend, DurableBackendValues, emptyWorkspace, hostFileName, localEventHubsEmulatorConnectionString, ProjectLanguage } from "../constants";
+import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, localEventHubsEmulatorConnectionString, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { getLocalConnectionString } from "../funcConfig/local.settings";
-import { localize } from "../localize";
+import { emptyWorkspace, localize } from "../localize";
 import { findFiles, getWorkspaceRootPath } from "./workspace";
 
 export namespace durableUtils {
@@ -44,18 +48,18 @@ export namespace durableUtils {
     }
 
     export async function getStorageTypeFromWorkspace(language: string | undefined, projectPath?: string): Promise<DurableBackendValues | undefined> {
-        projectPath ??= getWorkspaceRootPath();
+        return await genericWrapWithTryCatch<DurableBackendValues | undefined>(undefined, async () => {
+            projectPath ??= getWorkspaceRootPath();
 
-        if (!projectPath) {
-            return;
-        }
+            if (!projectPath) {
+                return;
+            }
 
-        const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
-        if (!hasDurableStorage) {
-            return;
-        }
+            const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
+            if (!hasDurableStorage) {
+                return;
+            }
 
-        try {
             const hostJsonPath = path.join(projectPath, hostFileName);
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
             const hostStorageType: DurableBackendValues | undefined = hostJson.extensions?.durableTask?.storageProvider?.type;
@@ -70,9 +74,7 @@ export namespace durableUtils {
                     // New DF's will use the more specific type 'DurableBackend.Storage', but legacy implementations may return this value as 'undefined'
                     return DurableBackend.Storage;
             }
-        } catch {
-            return;
-        }
+        });
     }
 
     // !------ Verify Durable Storage/Dependencies ------
@@ -101,36 +103,36 @@ export namespace durableUtils {
     }
 
     async function nodeProjectHasDurableDependency(projectPath: string): Promise<boolean> {
-        try {
+        return await genericWrapWithTryCatch<boolean>(false, async () => {
             const dfPackageName: string = 'durable-functions';
             const packagePath: string = path.join(projectPath, 'package.json');
             const packageJson = JSON.parse(await AzExtFsExtra.readFile(packagePath));
             const dependencies = packageJson.dependencies || {};
             return !!nonNullProp(dependencies, dfPackageName);
-        } catch {
-            return false;
-        }
+        });
     }
 
     async function dotnetProjectHasDurableDependency(projectPath: string): Promise<boolean> {
-        const dfPackageName: string = 'Microsoft.Azure.WebJobs.Extensions.DurableTask';
-        const csProjPaths: Uri[] = await findFiles(projectPath, '*.csproj');
-        const csProjContents: string = await AzExtFsExtra.readFile(csProjPaths[0].path);
+        return await genericWrapWithTryCatch<boolean>(false, async () => {
+            const dfPackageName: string = 'Microsoft.Azure.WebJobs.Extensions.DurableTask';
+            const csProjPaths: Uri[] = await findFiles(projectPath, '*.csproj');
+            const csProjContents: string = await AzExtFsExtra.readFile(csProjPaths[0].path);
 
-        return new Promise((resolve) => {
-            xml2js.parseString(csProjContents, { explicitArray: false }, (err: any, result: any): void => {
-                if (result && !err) {
-                    const packageReferences = result?.['Project']?.['ItemGroup'][0]?.PackageReference ?? [];
-                    for (const packageRef of packageReferences) {
-                        if (packageRef['$'] && packageRef['$']['Include']) {
-                            if (packageRef['$']['Include'] === dfPackageName) {
-                                resolve(true);
-                                return;
+            return new Promise((resolve) => {
+                xml2js.parseString(csProjContents, { explicitArray: false }, (err: any, result: any): void => {
+                    if (result && !err) {
+                        const packageReferences = result?.['Project']?.['ItemGroup'][0]?.PackageReference ?? [];
+                        for (const packageRef of packageReferences) {
+                            if (packageRef['$'] && packageRef['$']['Include']) {
+                                if (packageRef['$']['Include'] === dfPackageName) {
+                                    resolve(true);
+                                    return;
+                                }
                             }
                         }
                     }
-                }
-                resolve(false);
+                    resolve(false);
+                });
             });
         });
     }
@@ -146,25 +148,21 @@ export namespace durableUtils {
 
 export namespace netheriteUtils {
     export async function getEventHubName(projectPath: string): Promise<string | undefined> {
-        try {
+        return await genericWrapWithTryCatch<string | undefined>(undefined, async () => {
             const hostJsonPath = path.join(projectPath, hostFileName);
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
             const taskJson: INetheriteTaskJson = hostJson.extensions?.durableTask as INetheriteTaskJson;
             return taskJson?.hubName;
-        } catch {
-            return;
-        }
+        });
     }
 
     export async function getPartitionCount(projectPath: string): Promise<number | undefined> {
-        try {
+        return await genericWrapWithTryCatch<number | undefined>(undefined, async () => {
             const hostJsonPath = path.join(projectPath, hostFileName);
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
             const taskJson: INetheriteTaskJson = hostJson.extensions?.durableTask as INetheriteTaskJson;
             return taskJson?.storageProvider?.partitionCount;
-        } catch {
-            return;
-        }
+        });
     }
 
     export async function validateConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
@@ -184,11 +182,13 @@ export namespace netheriteUtils {
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
-        // Todo - maybe always prompt on debug in case the user wants to switch local.settings.json to emulator mode?
-        if (!hasEventHubsConnection) {
+        if (hasEventHubsConnection && options?.setConnectionForDeploy) {
+            Object.assign(context, { eventHubConnectionForDeploy: eventHubsConnection });
+        } else {
             promptSteps.push(new EventHubsConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }));
             executeSteps.push(new EventHubsConnectionExecuteStep(options?.setConnectionForDeploy));
         }
+
         if (!eventHubName) {
             promptSteps.push(new NetheriteEventHubNameStep());
         }
@@ -205,7 +205,6 @@ export namespace netheriteUtils {
 
         await wizard.prompt();
         await wizard.execute();
-        console.log('placeholder');
     }
 
     export function getDefaultNetheriteTaskConfig(hubName?: string, partitionCount?: number): INetheriteTaskJson {
@@ -223,6 +222,32 @@ export namespace netheriteUtils {
 }
 
 export namespace sqlUtils {
+    export async function validateConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
+        projectPath ??= getWorkspaceRootPath();
+
+        if (!projectPath) {
+            throw new Error(emptyWorkspace);
+        }
+
+        const sqlDbConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL, projectPath);
+        const hasSqlDbConnection: boolean = !!sqlDbConnection;
+
+        if (hasSqlDbConnection) {
+            if (options?.setConnectionForDeploy) {
+                Object.assign(context, { sqlDbConnectionForDeploy: sqlDbConnection });
+            }
+            return;
+        }
+
+        const wizardContext: ISqlDatabaseConnectionWizardContext = Object.assign(context, { projectPath });
+        const wizard: AzureWizard<IEventHubsConnectionWizardContext> = new AzureWizard(wizardContext, {
+            promptSteps: [new SqlDatabaseConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }), new SqlDatabaseListStep()],
+            executeSteps: [new SqlDatabaseConnectionExecuteStep(options?.setConnectionForDeploy)]
+        });
+        await wizard.prompt();
+        await wizard.execute();
+    }
+
     export function getDefaultSqlTaskConfig(): ISqlTaskJson {
         return {
             storageProvider: {
@@ -233,5 +258,13 @@ export namespace sqlUtils {
                 schemaName: null
             }
         };
+    }
+}
+
+async function genericWrapWithTryCatch<T>(defaultCatch: T, cb: () => Promise<T>): Promise<T> {
+    try {
+        return await cb();
+    } catch {
+        return defaultCatch;
     }
 }

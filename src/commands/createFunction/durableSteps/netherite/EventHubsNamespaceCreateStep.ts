@@ -18,8 +18,8 @@ export class EventHubsNamespaceCreateStep<T extends IEventHubsConnectionWizardCo
     public async execute(context: T, progress: Progress<{ message?: string; increment?: number }>): Promise<void> {
         const rgName: string = nonNullValue(context.resourceGroup?.name);
         const newNamespaceName: string = nonNullValue(context.newEventHubsNamespaceName);
-        const creating: string = localize('creatingEventHubsNamespace', 'Creating new Event Hubs Namespace "{0}"...', newNamespaceName);
-        const created: string = localize('createdEventHubsNamespace', 'Created new Event Hubs Namespace "{0}"...', newNamespaceName);
+        const creating: string = localize('creatingEventHubsNamespace', 'Creating new event hubs namespace "{0}"...', newNamespaceName);
+        const created: string = localize('createdEventHubsNamespace', 'Created new event hubs namespace "{0}"...', newNamespaceName);
         ext.outputChannel.appendLog(creating);
         progress.report({ message: creating });
 

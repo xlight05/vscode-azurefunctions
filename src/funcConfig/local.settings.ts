@@ -10,8 +10,8 @@ import { AzureWebJobsStorageExecuteStep } from '../commands/appSettings/AzureWeb
 import { AzureWebJobsStoragePromptStep } from '../commands/appSettings/AzureWebJobsStoragePromptStep';
 import { IAzureWebJobsStorageWizardContext } from '../commands/appSettings/IAzureWebJobsStorageWizardContext';
 import { IValidateConnectionOptions } from '../commands/appSettings/IConnectionPrompOptions';
-import { ConnectionKey, ConnectionKeyValues, emptyWorkspace, localSettingsFileName, localStorageEmulatorConnectionString } from '../constants';
-import { localize } from '../localize';
+import { ConnectionKey, ConnectionKeyValues, localSettingsFileName, localStorageEmulatorConnectionString } from '../constants';
+import { emptyWorkspace, localize } from '../localize';
 import { parseJson } from '../utils/parseJson';
 import { getWorkspaceRootPath } from '../utils/workspace';
 
@@ -47,8 +47,10 @@ export async function validateStorageConnection(context: IActionContext, options
 
     const currentStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
     const hasStorageConnection: boolean = !!currentStorageConnection && currentStorageConnection !== localStorageEmulatorConnectionString;
-    if (hasStorageConnection && options?.setConnectionForDeploy) {
-        process.env[ConnectionKey.Storage] = currentStorageConnection;
+    if (hasStorageConnection) {
+        if (options?.setConnectionForDeploy) {
+            Object.assign(context, { azureWebJobsConnectionForDeploy: currentStorageConnection });
+        }
         return;
     }
 

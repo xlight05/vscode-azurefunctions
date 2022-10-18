@@ -48,22 +48,24 @@ export async function verifyAppSettings(context: IActionContext & Partial<IFunct
 }
 
 export async function verifyAndUpdateAppConnectionStrings(context: IActionContext & Partial<IFunctionDeployContext>, durableStorageType: DurableBackendValues | undefined, remoteProperties: { [propertyName: string]: string }): Promise<boolean> {
-    let didChange: boolean = false;
+    let didUpdate: boolean = false;
     switch (durableStorageType) {
         case DurableBackend.Netherite:
             const updatedNetheriteConnection: boolean = updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.EventHub, context.eventHubConnectionForDeploy);
-            didChange ||= updatedNetheriteConnection;
+            didUpdate ||= updatedNetheriteConnection;
             break;
         case DurableBackend.SQL:
+            const updatedSqlDbConnection: boolean = updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.SQL, context.sqlDbConnectionForDeploy);
+            didUpdate ||= updatedSqlDbConnection;
             break;
         case DurableBackend.Storage:
         default:
     }
 
     const updatedStorageConnection = updateConnectionStringIfNeeded(context, remoteProperties, ConnectionKey.Storage, context.azureWebJobsConnectionForDeploy);
-    didChange ||= updatedStorageConnection;
+    didUpdate ||= updatedStorageConnection;
 
-    return didChange;
+    return didUpdate;
 }
 
 export function updateConnectionStringIfNeeded(context: IActionContext & Partial<IFunctionDeployContext>, remoteProperties: { [propertyName: string]: string }, propertyName: ConnectionKeyValues, newValue: string | undefined): boolean {

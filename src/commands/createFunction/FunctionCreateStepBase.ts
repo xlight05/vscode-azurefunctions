@@ -6,11 +6,11 @@
 import { AzExtFsExtra, AzureWizardExecuteStep, callWithTelemetryAndErrorHandling, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
 import { Progress, Uri, window, workspace } from 'vscode';
-import { DurableBackend, hostFileName, hostJsonConfigFailed } from '../../constants';
+import { DurableBackend, hostFileName } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { IHostJsonV2 } from '../../funcConfig/host';
 import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
-import { localize } from '../../localize';
+import { hostJsonConfigFailed, localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
 import { durableUtils, netheriteUtils, sqlUtils } from '../../utils/durableUtils';
 import { nonNullProp } from '../../utils/nonNull';
@@ -75,7 +75,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
     }
 
     private async _configureForDurableStorageIfNeeded(context: T): Promise<void> {
-        if (!context.durableStorageType) {
+        if (!context.newDurableStorageType) {
             return;
         }
 
@@ -84,7 +84,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
             const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath) as IHostJsonV2;
             hostJson.extensions ??= {};
 
-            switch (context.durableStorageType) {
+            switch (context.newDurableStorageType) {
                 case DurableBackend.Storage:
                     hostJson.extensions.durableTask = durableUtils.getDefaultStorageTaskConfig();
                     break;

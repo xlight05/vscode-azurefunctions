@@ -90,11 +90,15 @@ export class SubscriptionTreeItem extends SubscriptionTreeItemBase {
 
         const azureStorageConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage);
         const hasAzureStorageConnection: boolean = !!azureStorageConnection && azureStorageConnection !== localStorageEmulatorConnectionString;
-        context.telemetry.properties.projectHasLocalAzureStorageConnection = String(hasAzureStorageConnection);
+        context.telemetry.properties.projectHasAzureStorageConnection = String(hasAzureStorageConnection);
 
         const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub);
         const hasEventHubsConnection: boolean = !!eventHubsConnection && eventHubsConnection !== localEventHubsEmulatorConnectionString;
-        context.telemetry.properties.projectHasLocalEventHubsConnection = String(hasEventHubsConnection);
+        context.telemetry.properties.projectHasEventHubsConnection = String(hasEventHubsConnection);
+
+        const sqlDbConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL);
+        const hasSqlDbConnection: boolean = !!sqlDbConnection;
+        context.telemetry.properties.projectHasSqlDatabaseConnection = String(hasSqlDbConnection);
 
 
         // Ensure all the providers are registered before
@@ -105,9 +109,10 @@ export class SubscriptionTreeItem extends SubscriptionTreeItemBase {
             resourceGroupDeferLocationStep: true,
             version,
             language,
+            durableStorageType,
             hasAzureStorageConnection,
             hasEventHubsConnection,
-            durableStorageType,
+            hasSqlDbConnection,
             ...(await createActivityContext())
         });
 
@@ -132,7 +137,7 @@ export class SubscriptionTreeItem extends SubscriptionTreeItemBase {
             wizardContext.stackFilter = getRootFunctionsWorkerRuntime(language);
 
             // If we can detect a local Azure connection, that means we can skip the default creation of a new Resource Group
-            if (hasAzureStorageConnection || hasEventHubsConnection) {
+            if (hasAzureStorageConnection || hasEventHubsConnection || hasSqlDbConnection) {
                 promptSteps.push(new ResourceGroupListStep());
             } else {
                 executeSteps.push(new ResourceGroupCreateStep());

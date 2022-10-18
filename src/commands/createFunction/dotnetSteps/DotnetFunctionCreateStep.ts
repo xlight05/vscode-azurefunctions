@@ -63,8 +63,8 @@ export class DotnetFunctionCreateStep extends FunctionCreateStepBase<IDotnetFunc
     private async _installDependenciesIfNeeded(context: IDotnetFunctionWizardContext): Promise<void> {
         try {
             // Install Durable Functions dependency
-            if (context.durableStorageType) {
-                switch (context.durableStorageType) {
+            if (context.newDurableStorageType) {
+                switch (context.newDurableStorageType) {
                     case DurableBackend.Netherite:
                         // Todo: verify how this should be installed
                         await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.DurableTask.Netherite.AzureFunctions');

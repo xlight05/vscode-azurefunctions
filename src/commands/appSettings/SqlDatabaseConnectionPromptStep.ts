@@ -5,12 +5,13 @@
 
 import { AzureWizardPromptStep, ISubscriptionActionContext, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import { MessageItem } from 'vscode';
-import { ConnectionType, skipForNow } from '../../constants';
+import { ConnectionType } from '../../constants';
 import { ext } from '../../extensionVariables';
-import { localize } from '../../localize';
+import { localize, skipForNow } from '../../localize';
 import { SqlServerListStep } from '../createFunction/durableSteps/sql/SqlServerListStep';
 import { IConnectionPromptOptions } from './IConnectionPrompOptions';
 import { ISqlDatabaseConnectionWizardContext } from './ISqlDatabaseConnectionWizardContext';
+import { SqlDatabaseConnectionCustomPromptStep } from './SqlDatabaseConnectionCustomPromptStep';
 
 export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWizardContext> extends AzureWizardPromptStep<T> {
     public constructor(private readonly _options?: IConnectionPromptOptions) {
@@ -24,22 +25,25 @@ export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWiz
             return;
         }
 
-        const selectSqlDatabase: MessageItem = { title: localize('selectSqlDatabase', 'Select SQL Server') };
+        const connectAzureDatabase: MessageItem = { title: localize('connectSqlDatabase', 'Connect Azure SQL Database') };
+        const connectNonAzureDatabase: MessageItem = { title: localize('connectSqlDatabase', 'Connect Non-Azure SQL Database') };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
-        const message: string = localize('selectSqlDatabaseConnection', 'In order to proceed, you must select a SQL server for internal use by the Azure Functions runtime.');
+        const message: string = localize('selectSqlDatabaseConnection', 'In order to proceed, you must connect a SQL database for internal use by the Azure Functions runtime.');
 
-        const buttons: MessageItem[] = [selectSqlDatabase];
+        const buttons: MessageItem[] = [connectAzureDatabase, connectNonAzureDatabase];
 
         if (!this._options?.suppressSkipForNow) {
             buttons.push(skipForNowButton);
         }
 
         const result: MessageItem = await context.ui.showWarningMessage(message, { modal: true }, ...buttons);
-        if (result === selectSqlDatabase) {
+        if (result === connectAzureDatabase) {
             context.sqlDbConnectionType = ConnectionType.Azure;
+        } else if (result === connectNonAzureDatabase) {
+            context.sqlDbConnectionType = ConnectionType.NonAzure;
         } else {
-            context.sqlDbConnectionType = ConnectionType.Skip;
+            context.sqlDbConnectionType = ConnectionType.None;
         }
 
         context.telemetry.properties.sqlDbConnectionType = context.sqlDbConnectionType;
@@ -53,11 +57,14 @@ export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWiz
     }
 
     public async getSubWizard(context: T): Promise<IWizardOptions<T & ISubscriptionActionContext> | undefined> {
-        if (context.sqlDbConnectionType === ConnectionType.Skip) {
+        if (context.sqlDbConnectionType === ConnectionType.None) {
             return;
         }
 
-        // Currently no separate 'emulator' flow, so default to 'Azure' flow
+        if (context.sqlDbConnectionType === ConnectionType.NonAzure) {
+            return { promptSteps: [new SqlDatabaseConnectionCustomPromptStep()] }
+        }
+
         const promptSteps: AzureWizardPromptStep<T & ISubscriptionActionContext>[] = [];
 
         const subscriptionPromptStep: AzureWizardPromptStep<ISubscriptionActionContext> | undefined = await ext.azureAccountTreeItem.getSubscriptionPromptStep(context);

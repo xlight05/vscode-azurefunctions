@@ -5,9 +5,10 @@
 
 import { AzExtFsExtra } from '@microsoft/vscode-azext-utils';
 import * as path from 'path';
-import { functionJsonFileName, npmInstallFailure, ProjectLanguage } from '../../../constants';
+import { functionJsonFileName, ProjectLanguage } from '../../../constants';
 import { ext } from '../../../extensionVariables';
 import { IFunctionBinding, IFunctionJson } from '../../../funcConfig/function';
+import { npmInstallFailure } from '../../../localize';
 import { IScriptFunctionTemplate } from '../../../templates/script/parseScriptTemplates';
 import { cpUtils } from '../../../utils/cpUtils';
 import { nonNullProp } from '../../../utils/nonNull';
@@ -66,7 +67,7 @@ export class ScriptFunctionCreateStep extends FunctionCreateStepBase<IScriptFunc
     private async _installDependenciesIfNeeded(context: IScriptFunctionWizardContext): Promise<void> {
         try {
             // Install Durable Functions dependency
-            if (context.durableStorageType) {
+            if (context.newDurableStorageType) {
                 await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'npm', 'install', 'durable-functions');
             }
         } catch {
