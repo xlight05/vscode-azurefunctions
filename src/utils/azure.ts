@@ -86,10 +86,17 @@ export async function getSqlDatabaseConnectionString(context: ISqlDatabaseConnec
     const serverName: string = nonNullValue(context.sqlServer?.name);
     const dbName: string = nonNullValue(context.sqlDatabase?.name);
     const username: string | undefined = context.sqlServer?.administratorLogin;
-    const password: string | undefined = context.newSqlAdminPassword;  // password is never returned back to us on the sqlServer object
 
     if (!username) {
         throw new Error(localize('unableToDetermineSqlConnection', 'We were unable to locate the admin user for this SQL server, please add these credentials to your resource to proceed.'));
+    }
+
+    let password: string | undefined = context.newSqlAdminPassword;  // password is never returned back to us on the sqlServer object
+    if (!password) {
+        password = (await context.ui.showInputBox({
+            prompt: localize('sqlPasswordPrompt', 'Please enter your SQL server\'s admin password.'),
+            password: true
+        })).trim() ?? 'null';
     }
 
     return {

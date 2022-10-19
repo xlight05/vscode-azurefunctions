@@ -68,7 +68,7 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
         context.deployMethod = 'zip';
     }
 
-    const [shouldValidateStorage, shouldValidateNetherite, shouldValidateSqlDb] = await shouldValidateConnections(context, client);
+    const [shouldValidateStorage, shouldValidateNetherite, shouldValidateSqlDb] = await shouldValidateConnections(context, durableStorageType, client);
 
     const doRemoteBuild: boolean | undefined = getWorkspaceSetting<boolean>(remoteBuildSetting, deployPaths.effectiveDeployFsPath);
     actionContext.telemetry.properties.scmDoBuildDuringDeployment = String(doRemoteBuild);
@@ -84,12 +84,14 @@ async function deploy(actionContext: IActionContext, arg1: vscode.Uri | string |
     // Preliminary local validation done to ensure all required resources have been created for the connection, final deploy choices are made in 'verifyAppSettings'
     switch (durableStorageType) {
         case DurableBackend.Netherite:
-            if (!shouldValidateNetherite) break;
-            await netheriteUtils.validateConnection(context, { setConnectionForDeploy: true, preSelectedConnectionType: ConnectionType.Azure });
+            if (shouldValidateNetherite) {
+                await netheriteUtils.validateConnection(context, { setConnectionForDeploy: true, preSelectedConnectionType: ConnectionType.Azure });
+            }
             break;
         case DurableBackend.SQL:
-            if (!shouldValidateSqlDb) break;
-            await sqlUtils.validateConnection(context, { setConnectionForDeploy: true });
+            if (shouldValidateSqlDb) {
+                await sqlUtils.validateConnection(context, { setConnectionForDeploy: true });
+            }
             break;
         case DurableBackend.Storage:
         default:
@@ -185,7 +187,7 @@ async function validateGlobSettings(context: IActionContext, fsPath: string): Pr
     }
 }
 
-export async function shouldValidateConnections(context: IActionContext, client: SiteClient, projectPath?: string): Promise<[boolean, boolean, boolean]> {
+export async function shouldValidateConnections(context: IActionContext, durableStorageType: DurableBackendValues | undefined, client: SiteClient, projectPath?: string): Promise<[boolean, boolean, boolean]> {
     const app: StringDictionary = await client.listApplicationSettings();
     const remoteStorageConnection: string | undefined = app?.properties?.[ConnectionKey.Storage];
     const remoteEventHubsConnection: string | undefined = app?.properties?.[ConnectionKey.EventHub];
@@ -195,11 +197,24 @@ export async function shouldValidateConnections(context: IActionContext, client:
     const localEventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
     const localSqlDbConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL, projectPath);
 
-    const shouldValidateStorage: boolean = !remoteStorageConnection || (!!localStorageConnection && localStorageConnection !== localStorageEmulatorConnectionString
-        && remoteStorageConnection !== localStorageConnection && await promptShouldOverwrite(context, ConnectionKey.Storage));
-    const shouldValidateEventHubs: boolean = !remoteEventHubsConnection || (!!localEventHubsConnection && localEventHubsConnection !== localStorageEmulatorConnectionString
-        && remoteEventHubsConnection !== localEventHubsConnection && await promptShouldOverwrite(context, ConnectionKey.EventHub));
-    const shouldValidateSqlDb: boolean = !remoteSqlDbConnection || (!!localSqlDbConnection && remoteSqlDbConnection !== localSqlDbConnection && await promptShouldOverwrite(context, ConnectionKey.SQL));
+    const shouldValidateStorage: boolean = !remoteStorageConnection ||
+        (!!localStorageConnection &&
+            localStorageConnection !== localStorageEmulatorConnectionString &&
+            remoteStorageConnection !== localStorageConnection &&
+            await promptShouldOverwrite(context, ConnectionKey.Storage));
+
+    const shouldValidateEventHubs: boolean = durableStorageType === DurableBackend.Netherite &&
+        (!remoteEventHubsConnection ||
+            (!!localEventHubsConnection &&
+                localEventHubsConnection !== localStorageEmulatorConnectionString &&
+                remoteEventHubsConnection !== localEventHubsConnection &&
+                await promptShouldOverwrite(context, ConnectionKey.EventHub)));
+
+    const shouldValidateSqlDb: boolean = durableStorageType === DurableBackend.SQL &&
+        (!remoteSqlDbConnection ||
+            (!!localSqlDbConnection &&
+                remoteSqlDbConnection !== localSqlDbConnection &&
+                await promptShouldOverwrite(context, ConnectionKey.SQL)));
 
     return [shouldValidateStorage, shouldValidateEventHubs, shouldValidateSqlDb];
 }

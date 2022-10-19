@@ -29,11 +29,8 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
 
         const message: string = localize('connectAzureWebJobsStorage', 'In order to proceed, you must connect a storage account for internal use by the Azure Functions runtime.');
 
-        const buttons: MessageItem[] = [connectStorageButton];
-        if (process.platform === 'win32') {
-            // Only show on Windows until Azurite is officially supported: https://github.com/Azure/azure-functions-core-tools/issues/1247
-            buttons.push(useEmulatorButton);
-        }
+        const buttons: MessageItem[] = [connectStorageButton, useEmulatorButton];
+
         if (!this._options?.suppressSkipForNow) {
             buttons.push(skipForNowButton);
         }

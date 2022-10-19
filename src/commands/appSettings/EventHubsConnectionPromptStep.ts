@@ -24,17 +24,14 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
             return;
         }
 
-        const connectEventNamespaceButton: MessageItem = { title: localize('connectEventHubsNamespace', 'Connect event hub namespace') };
+        const connectEventNamespaceButton: MessageItem = { title: localize('connectEventHubsNamespace', 'Connect Event Hub Namespace') };
         const useEmulatorButton: MessageItem = { title: useEmulator };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
         const message: string = localize('selectEventHubsNamespace', 'In order to proceed, you must connect an event hub namespace for internal use by the Azure Functions runtime.');
 
-        const buttons: MessageItem[] = [connectEventNamespaceButton];
-        if (process.platform === 'win32') {
-            // Only show on Windows until Azurite is officially supported: https://github.com/Azure/azure-functions-core-tools/issues/1247
-            buttons.push(useEmulatorButton);
-        }
+        const buttons: MessageItem[] = [connectEventNamespaceButton, useEmulatorButton];
+
         if (!this._options?.suppressSkipForNow) {
             buttons.push(skipForNowButton);
         }

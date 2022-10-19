@@ -71,7 +71,7 @@ export async function preDebugValidate(context: IActionContext, debugConfig: vsc
                 }
 
                 context.telemetry.properties.lastValidateStep = 'azureWebJobsStorage';
-                await validateAzureWebJobsStorage(context, projectLanguage, projectLanguageModel, projectPath);
+                await validateAzureWebJobsStorage(context, projectLanguage, projectLanguageModel, projectPath, !!durableStorageType);
 
                 context.telemetry.properties.lastValidateStep = 'emulatorRunning';
                 shouldContinue = await validateEmulatorIsRunning(context, projectPath);
@@ -159,8 +159,8 @@ async function validateWorkerRuntime(context: IActionContext, projectLanguage: s
     }
 }
 
-async function validateAzureWebJobsStorage(context: IActionContext, projectLanguage: string | undefined, projectLanguageModel: number | undefined, projectPath: string): Promise<void> {
-    if (canValidateAzureWebJobStorageOnDebug(projectLanguage)) {
+async function validateAzureWebJobsStorage(context: IActionContext, projectLanguage: string | undefined, projectLanguageModel: number | undefined, projectPath: string, requiresDurableStorage: boolean): Promise<void> {
+    if (canValidateAzureWebJobStorageOnDebug(projectLanguage) || requiresDurableStorage) {
         const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
         if (!azureWebJobsStorage) {
             const functionFolders: string[] = await getFunctionFolders(context, projectPath);
@@ -170,7 +170,7 @@ async function validateAzureWebJobsStorage(context: IActionContext, projectLangu
             }));
 
             // NOTE: Currently, Python V2+ requires storage to be configured, even for HTTP triggers.
-            if (functions.some(f => !f.isHttpTrigger) || isPythonV2Plus(projectLanguage, projectLanguageModel)) {
+            if (functions.some(f => !f.isHttpTrigger) || isPythonV2Plus(projectLanguage, projectLanguageModel) || requiresDurableStorage) {
                 const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
                 const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
                     promptSteps: [new AzureWebJobsStoragePromptStep({ suppressSkipForNow: true })],

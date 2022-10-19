@@ -8,9 +8,9 @@ export namespace validateUtils {
         const thirtyTwoBitMaxSafeInteger = 2147483647;
 
         lower ??= 1;
-        upper ??= thirtyTwoBitMaxSafeInteger;
+        upper = (!upper || upper > thirtyTwoBitMaxSafeInteger) ? thirtyTwoBitMaxSafeInteger : upper;
 
-        if (value.length < lower || value.length > upper) {
+        if (lower > upper || value.length < lower || value.length > upper) {
             return false;
         } else {
             return true;

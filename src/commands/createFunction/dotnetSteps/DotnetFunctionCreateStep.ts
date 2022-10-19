@@ -70,12 +70,14 @@ export class DotnetFunctionCreateStep extends FunctionCreateStepBase<IDotnetFunc
                         await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.DurableTask.Netherite.AzureFunctions');
                         break;
                     case DurableBackend.SQL:
+                        await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.DurableTask.SqlServer.AzureFunctions');
                         break;
                     case DurableBackend.Storage:
                     default:
                 }
 
-                await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.WebJobs.Extensions.DurableTask');  // Seems that the package arrives out-dated and needs to be updated
+                // Seems that the package arrives out-dated and needs to be updated
+                await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.WebJobs.Extensions.DurableTask');
             }
         } catch {
             ext.outputChannel.appendLog(localize('funcInstallFailed', 'WARNING: Failed to install and update Durable Functions NuGet packages to the .csproj project file. You may need to configure them manually or start from a clean project.'))
