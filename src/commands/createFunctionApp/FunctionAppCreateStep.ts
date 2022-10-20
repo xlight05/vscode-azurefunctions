@@ -133,6 +133,14 @@ export class FunctionAppCreateStep extends AzureWizardExecuteStep<IFunctionAppWi
             });
         }
 
+        if (context.hasSqlDbConnection) {
+            const sqlDbConnectionString: string = await getLocalConnectionString(context, ConnectionKey.SQL) || '';
+            appSettings.push({
+                name: ConnectionKey.SQL,
+                value: sqlDbConnectionString
+            });
+        }
+
         const isElasticPremium: boolean = context.plan?.sku?.family?.toLowerCase() === 'ep';
         const isConsumption: boolean = context.plan?.sku?.family?.toLowerCase() === 'y';
         if (isConsumption || isElasticPremium) {
