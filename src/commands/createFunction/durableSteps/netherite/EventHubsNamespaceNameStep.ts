@@ -37,8 +37,8 @@ export class EventHubsNamespaceNameStep<T extends IEventHubsConnectionWizardCont
         }
         await delay(1000);
 
-        const isAvailable: boolean = !!(await this._client.namespaces.checkNameAvailability({ name })).nameAvailable;
-        if (!isAvailable) {
+        const isNameAvailable: boolean = !!(await this._client.namespaces.checkNameAvailability({ name })).nameAvailable;
+        if (!isNameAvailable) {
             return localize('eventHubNamespaceExists', 'The event hub namespace you entered already exists. Please enter a unique name.');
         }
         return undefined;

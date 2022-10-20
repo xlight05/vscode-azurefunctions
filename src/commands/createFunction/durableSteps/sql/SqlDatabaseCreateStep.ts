@@ -38,6 +38,7 @@ export class SqlDatabaseCreateStep<T extends ISqlDatabaseConnectionWizardContext
         };
 
         context.sqlDatabase = await client.databases.beginCreateOrUpdateAndWait(rgName, serverName, newDatabaseName, dbParams);
+        client.firewallRules.createOrUpdate(rgName, serverName, 'AllowAllAzureIps', { startIpAddress: '0.0.0.0', endIpAddress: '0.0.0.0' });
         ext.outputChannel.appendLog(created);
     }
 

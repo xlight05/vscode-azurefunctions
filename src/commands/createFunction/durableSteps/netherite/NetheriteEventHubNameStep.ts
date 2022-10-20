@@ -3,33 +3,37 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzureWizardPromptStep } from '@microsoft/vscode-azext-utils';
+import { Eventhub, EventHubManagementClient } from '@azure/arm-eventhub';
+import { uiUtils } from '@microsoft/vscode-azext-azureutils';
+import { AzureWizardPromptStep, ISubscriptionContext, nonNullValue } from '@microsoft/vscode-azext-utils';
 import { ConnectionType } from '../../../../constants';
 import { invalidLength, invalidLowerCaseAlphanumericWithHyphens, localize } from '../../../../localize';
+import { createEventHubClient } from '../../../../utils/azureClients';
 import { validateUtils } from '../../../../utils/validateUtils';
 import { IEventHubsConnectionWizardContext } from '../../../appSettings/IEventHubsConnectionWizardContext';
 
 
 export class NetheriteEventHubNameStep<T extends IEventHubsConnectionWizardContext> extends AzureWizardPromptStep<T> {
-    // private _eventHubNames: string[];
-
-    // public static async isNameAvailable(name: string, context?: ISubscriptionActionContext, stepContext?: NetheriteEventHubNameStep<IEventHubsConnectionWizardContext>): Promise<boolean | undefined> {
-    //     if (!stepContext && !context) {
-    //         return;
-    //     }
-    //     if (!stepContext && context) {
-    //         client = await createEventHubClient(context);
-    //     }
-
-    //     client?.eventHubs.
-    // }
+    private _eventHubs: Eventhub[] = [];
 
     public async prompt(context: T): Promise<void> {
-        console.log(context);
+        // Prep to check name availability, else it must be new and we can skip the name availability check
+        if (context.eventHubsNamespace) {
+            try {
+                const client: EventHubManagementClient = await createEventHubClient(<T & ISubscriptionContext>context);
+                const rgName: string = nonNullValue(context.resourceGroup?.name);
+                const ehNamespaceName: string = nonNullValue(context.eventHubsNamespace.name);
+
+                const eventHubIterator = await client.eventHubs.listByNamespace(rgName, ehNamespaceName);
+                this._eventHubs = await uiUtils.listAllIterator(eventHubIterator);
+            } catch { /* Catches the case where an older created resource group is chosen and that group is not home to the event hub namespace */ }
+        }
 
         context.newEventHubName = (await context.ui.showInputBox({
             prompt: localize('eventHubNamePrompt', 'Enter a name for the new event hub.'),
-            validateInput: (value: string | undefined) => this.validateInput(value)
+            validateInput: (value: string | undefined) => {
+                return this.validateInput(value)
+            }
         })).trim();
     }
 
@@ -47,12 +51,10 @@ export class NetheriteEventHubNameStep<T extends IEventHubsConnectionWizardConte
             return invalidLowerCaseAlphanumericWithHyphens;
         }
 
-        // await delay(1000);
-
-        // const isNameAvailable = await NetheriteEventHubNameStep.isNameAvailable(name, undefined, this);
-        // if (!isNameAvailable) {
-        //     return localize('eventHubExists', 'The event hub you entered already exists. Please enter a unique name.');
-        // }
+        const isNameAvailable: boolean = !this._eventHubs.some(eh => eh.name === name);
+        if (!isNameAvailable) {
+            return localize('eventHubExists', 'The event hub you entered already exists. Please enter a unique name.');
+        }
 
         return undefined;
     }
