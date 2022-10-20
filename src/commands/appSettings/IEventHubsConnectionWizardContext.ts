@@ -21,7 +21,6 @@ export interface IEventHubsConnectionWizardContext extends IActionContext, Parti
     newEventHubsNamespaceName?: string;
     eventHubsNamespace?: EHNamespace;
     newEventHubName?: string;
-    partitionCount?: number;
 
     eventHubConnectionForDeploy?: string;
 }

@@ -22,12 +22,10 @@ export class NetheriteConfigureHostStep<T extends IEventHubsConnectionWizardCont
 
             const durableTask = hostJson.extensions?.durableTask as INetheriteTaskJson ?? {};
             const existingHubName: string | undefined = durableTask?.hubName;
-            const existingPartitionCount: number | undefined = durableTask?.storageProvider?.partitionCount;
 
             hostJson.extensions ??= {};
             hostJson.extensions.durableTask = netheriteUtils.getDefaultNetheriteTaskConfig(
-                nonNullValue(context.newEventHubName || existingHubName),
-                nonNullValue(context.partitionCount || existingPartitionCount)
+                nonNullValue(context.newEventHubName || existingHubName)
             );
 
             await AzExtFsExtra.writeJSON(hostJsonPath, hostJson);
@@ -37,6 +35,6 @@ export class NetheriteConfigureHostStep<T extends IEventHubsConnectionWizardCont
     }
 
     public shouldExecute(context: T): boolean {
-        return !!context.newEventHubName || !!context.partitionCount;
+        return !!context.newEventHubName;
     }
 }

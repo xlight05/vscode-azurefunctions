@@ -16,7 +16,6 @@ import { SqlDatabaseConnectionExecuteStep } from "../commands/appSettings/SqlDat
 import { SqlDatabaseConnectionPromptStep } from "../commands/appSettings/SqlDatabaseConnectionPromptStep";
 import { NetheriteConfigureHostStep } from "../commands/createFunction/durableSteps/netherite/NetheriteConfigureHostStep";
 import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep";
-import { NetheriteEventHubPartitionsStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubPartitionsStep";
 import { SqlDatabaseListStep } from "../commands/createFunction/durableSteps/sql/SqlDatabaseListStep";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
 import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, localEventHubsEmulatorConnectionString, ProjectLanguage } from "../constants";
@@ -156,15 +155,6 @@ export namespace netheriteUtils {
         });
     }
 
-    export async function getPartitionCount(projectPath: string): Promise<number | undefined> {
-        return await genericWrapWithTryCatch<number | undefined>(undefined, async () => {
-            const hostJsonPath = path.join(projectPath, hostFileName);
-            const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
-            const taskJson: INetheriteTaskJson = hostJson.extensions?.durableTask as INetheriteTaskJson;
-            return taskJson?.storageProvider?.partitionCount;
-        });
-    }
-
     export async function validateConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
         projectPath ??= getWorkspaceRootPath();
 
@@ -176,7 +166,6 @@ export namespace netheriteUtils {
         const hasEventHubsConnection: boolean = !!eventHubsConnection && eventHubsConnection !== localEventHubsEmulatorConnectionString;
 
         const eventHubName: string | undefined = await getEventHubName(projectPath);
-        const partitionCount: number | undefined = await getPartitionCount(projectPath);
 
         const wizardContext: IEventHubsConnectionWizardContext = Object.assign(context, { projectPath });
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
@@ -192,9 +181,6 @@ export namespace netheriteUtils {
         if (!eventHubName) {
             promptSteps.push(new NetheriteEventHubNameStep());
         }
-        if (!partitionCount) {
-            promptSteps.push(new NetheriteEventHubPartitionsStep());
-        }
 
         executeSteps.push(new NetheriteConfigureHostStep());
 
@@ -207,13 +193,13 @@ export namespace netheriteUtils {
         await wizard.execute();
     }
 
-    export function getDefaultNetheriteTaskConfig(hubName?: string, partitionCount?: number): INetheriteTaskJson {
+    export function getDefaultNetheriteTaskConfig(hubName?: string): INetheriteTaskJson {
         return {
             hubName: hubName || "",
             useGracefulShutdown: true,
             storageProvider: {
                 type: DurableBackend.Netherite,
-                partitionCount,
+                partitionCount: 12,
                 StorageConnectionName: ConnectionKey.Storage,
                 EventHubsConnectionName: ConnectionKey.EventHub,
             }

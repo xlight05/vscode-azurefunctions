@@ -23,7 +23,6 @@ import { DotnetFunctionNameStep } from './dotnetSteps/DotnetFunctionNameStep';
 import { DotnetNamespaceStep } from './dotnetSteps/DotnetNamespaceStep';
 import { NetheriteConfigureHostStep } from './durableSteps/netherite/NetheriteConfigureHostStep';
 import { NetheriteEventHubNameStep } from './durableSteps/netherite/NetheriteEventHubNameStep';
-import { NetheriteEventHubPartitionsStep } from './durableSteps/netherite/NetheriteEventHubPartitionsStep';
 import { SqlDatabaseListStep } from './durableSteps/sql/SqlDatabaseListStep';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
 import { JavaFunctionCreateStep } from './javaSteps/JavaFunctionCreateStep';
@@ -96,7 +95,7 @@ export class FunctionSubWizard {
 
             switch (context.newDurableStorageType) {
                 case DurableBackend.Netherite:
-                    promptSteps.push(new EventHubsConnectionPromptStep(), new NetheriteEventHubNameStep(), new NetheriteEventHubPartitionsStep());
+                    promptSteps.push(new EventHubsConnectionPromptStep(), new NetheriteEventHubNameStep());
                     executeSteps.push(new EventHubsConnectionExecuteStep(), new NetheriteConfigureHostStep());
                     break;
                 case DurableBackend.SQL:
