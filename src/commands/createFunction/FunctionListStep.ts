@@ -124,6 +124,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         const templates: IFunctionTemplate[] = await templateProvider.getFunctionTemplates(context, context.projectPath, language, context.languageModel, version, templateFilter, context.projectTemplateKey);
         context.telemetry.measurements.templateCount = templates.length;
         const picks: IAzureQuickPickItem<IFunctionTemplate | TemplatePromptResult>[] = templates
+            .filter((t) => !(isDfTemplateButNotOrchestrator(t.id) && !context.hasDurableStorage))
             .sort((a, b) => sortTemplates(a, b, templateFilter))
             .map(t => { return { label: t.name, data: t }; });
 
@@ -187,6 +188,18 @@ async function promptForTemplateFilter(context: IActionContext): Promise<Templat
 
     const options: IAzureQuickPickOptions = { suppressPersistence: true, placeHolder: localize('selectFilter', 'Select a template filter') };
     return (await context.ui.showQuickPick(picks, options)).data;
+}
+
+// Identify and filter out Durable Functions Templates that aren't Orchestrator Templates if no existing storage connection is detected
+function isDfTemplateButNotOrchestrator(templateId: string): boolean {
+    const durableFunctions = /DurableFunctions/i;
+    const orchestrator = /orchestrat/i;
+
+    if (durableFunctions.test(templateId) && !orchestrator.test(templateId)) {
+        return true;
+    } else {
+        return false;
+    }
 }
 
 /**
