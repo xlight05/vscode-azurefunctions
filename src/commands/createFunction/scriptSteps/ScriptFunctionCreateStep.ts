@@ -8,10 +8,13 @@ import * as path from 'path';
 import { functionJsonFileName, ProjectLanguage } from '../../../constants';
 import { ext } from '../../../extensionVariables';
 import { IFunctionBinding, IFunctionJson } from '../../../funcConfig/function';
-import { npmInstallFailure } from '../../../localize';
+import { localize } from '../../../localize';
 import { IScriptFunctionTemplate } from '../../../templates/script/parseScriptTemplates';
 import { cpUtils } from '../../../utils/cpUtils';
+import { durableUtils } from '../../../utils/durableUtils';
 import { nonNullProp } from '../../../utils/nonNull';
+import { pythonUtils } from '../../../utils/pythonUtils';
+import { venvUtils } from '../../../utils/venvUtils';
 import { FunctionCreateStepBase } from '../FunctionCreateStepBase';
 import { getBindingSetting } from '../IFunctionWizardContext';
 import { IScriptFunctionWizardContext } from './IScriptFunctionWizardContext';
@@ -57,21 +60,34 @@ export class ScriptFunctionCreateStep extends FunctionCreateStepBase<IScriptFunc
         const functionJsonPath: string = path.join(functionPath, functionJsonFileName);
         await AzExtFsExtra.writeJSON(functionJsonPath, functionJson);
 
-        await this._installDependenciesIfNeeded(context);
-
         const language: ProjectLanguage = nonNullProp(context, 'language');
         const fileName: string | undefined = getScriptFileNameFromLanguage(language);
+        await this._installDurableDependenciesIfNeeded(context, language);
+
         return fileName ? path.join(functionPath, fileName) : functionJsonPath;
     }
 
-    private async _installDependenciesIfNeeded(context: IScriptFunctionWizardContext): Promise<void> {
+    private async _installDurableDependenciesIfNeeded(context: IScriptFunctionWizardContext, language: ProjectLanguage): Promise<void> {
+        if (!context.newDurableStorageType) {
+            return;
+        }
+
+        const dfDepInstallFailed: string = localize('failedToAddDurableDependency', 'Failed to add or install durable package dependency. Please inspect and verify if it needs to be added manually.');
+
         try {
-            // Install Durable Functions dependency
-            if (context.newDurableStorageType) {
-                await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'npm', 'install', 'durable-functions');
+            switch (language) {
+                case ProjectLanguage.JavaScript:
+                case ProjectLanguage.TypeScript:
+                    await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'npm', 'install', durableUtils.nodeDfPackage);
+                    break;
+                case ProjectLanguage.Python:
+                    await pythonUtils.addDependencyToRequirements(durableUtils.pythonDfPackage);
+                    await venvUtils.runPipInstallCommandIfPossible();
+                    break;
+                default:
             }
         } catch {
-            ext.outputChannel.appendLog(npmInstallFailure);
+            ext.outputChannel.appendLog(dfDepInstallFailed);
         }
     }
 

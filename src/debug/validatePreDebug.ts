@@ -20,7 +20,7 @@ import { validateFuncCoreToolsInstalled } from '../funcCoreTools/validateFuncCor
 import { localize } from '../localize';
 import { getFunctionFolders } from "../tree/localProject/LocalFunctionsTreeItem";
 import { durableUtils, netheriteUtils, sqlUtils } from '../utils/durableUtils';
-import { isPythonV2Plus } from '../utils/pythonUtils';
+import { pythonUtils } from '../utils/pythonUtils';
 import { getDebugConfigs, isDebugConfigEqual } from '../vsCodeConfig/launch';
 import { getWorkspaceSetting, tryGetFunctionsWorkerRuntimeForProject } from "../vsCodeConfig/settings";
 
@@ -128,7 +128,7 @@ function getMatchingWorkspace(debugConfig: vscode.DebugConfiguration): vscode.Wo
 async function validateFunctionVersion(context: IActionContext, projectLanguage: string | undefined, projectLanguageModel: number | undefined, workspacePath: string): Promise<boolean> {
     const validateTools = getWorkspaceSetting<boolean>('validateFuncCoreTools', workspacePath) !== false;
 
-    if (validateTools && isPythonV2Plus(projectLanguage, projectLanguageModel)) {
+    if (validateTools && pythonUtils.isV2Plus(projectLanguage, projectLanguageModel)) {
         const version = await getLocalFuncCoreToolsVersion(context, workspacePath);
 
         // NOTE: This is the latest version available as of this commit,
@@ -170,7 +170,7 @@ async function validateAzureWebJobsStorage(context: IActionContext, projectLangu
             }));
 
             // NOTE: Currently, Python V2+ requires storage to be configured, even for HTTP triggers.
-            if (functions.some(f => !f.isHttpTrigger) || isPythonV2Plus(projectLanguage, projectLanguageModel) || requiresDurableStorage) {
+            if (functions.some(f => !f.isHttpTrigger) || pythonUtils.isV2Plus(projectLanguage, projectLanguageModel) || requiresDurableStorage) {
                 const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
                 const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
                     promptSteps: [new AzureWebJobsStoragePromptStep({ suppressSkipForNow: true })],

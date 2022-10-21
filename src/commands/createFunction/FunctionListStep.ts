@@ -12,7 +12,7 @@ import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
 import { durableUtils } from '../../utils/durableUtils';
 import { nonNullProp } from '../../utils/nonNull';
-import { isPythonV2Plus } from '../../utils/pythonUtils';
+import { pythonUtils } from '../../utils/pythonUtils';
 import { getWorkspaceSetting, updateWorkspaceSetting } from '../../vsCodeConfig/settings';
 import { FunctionSubWizard } from './FunctionSubWizard';
 import { IFunctionWizardContext } from './IFunctionWizardContext';
@@ -57,7 +57,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
     }
 
     public async getSubWizard(context: IFunctionWizardContext): Promise<IWizardOptions<IFunctionWizardContext> | undefined> {
-        const isV2PythonModel = isPythonV2Plus(context.language, context.languageModel);
+        const isV2PythonModel = pythonUtils.isV2Plus(context.language, context.languageModel);
 
         const needsStorageSetup: boolean = !!context.functionTemplate && durableUtils.requiresDurableStorage(context.functionTemplate.id) && !context.hasDurableStorage;
         if (needsStorageSetup) {
@@ -143,7 +143,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
                 data: <IFunctionTemplate | TemplatePromptResult><unknown>undefined,
                 onPicked: () => { /* do nothing */ }
             })
-        } else if (language === ProjectLanguage.CSharp || language === ProjectLanguage.Java || (language === ProjectLanguage.Python && !isPythonV2Plus(language, languageModel)) || language === ProjectLanguage.TypeScript) {
+        } else if (language === ProjectLanguage.CSharp || language === ProjectLanguage.Java || (language === ProjectLanguage.Python && !pythonUtils.isV2Plus(language, languageModel)) || language === ProjectLanguage.TypeScript) {
             // NOTE: Only show this if we actually found other templates
             picks.push({
                 label: localize('openAPI', 'HTTP trigger(s) from OpenAPI V2/V3 Specification (Preview)'),

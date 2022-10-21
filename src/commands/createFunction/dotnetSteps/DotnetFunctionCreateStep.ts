@@ -12,6 +12,7 @@ import { localize } from '../../../localize';
 import { executeDotnetTemplateCommand, validateDotnetInstalled } from '../../../templates/dotnet/executeDotnetTemplateCommand';
 import { IFunctionTemplate } from '../../../templates/IFunctionTemplate';
 import { cpUtils } from '../../../utils/cpUtils';
+import { durableUtils } from '../../../utils/durableUtils';
 import { nonNullProp } from '../../../utils/nonNull';
 import { FunctionCreateStepBase } from '../FunctionCreateStepBase';
 import { getBindingSetting } from '../IFunctionWizardContext';
@@ -66,18 +67,17 @@ export class DotnetFunctionCreateStep extends FunctionCreateStepBase<IDotnetFunc
             if (context.newDurableStorageType) {
                 switch (context.newDurableStorageType) {
                     case DurableBackend.Netherite:
-                        // Todo: verify how this should be installed
-                        await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.DurableTask.Netherite.AzureFunctions');
+                        await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', durableUtils.dotnetDfNetheritePackage);
                         break;
                     case DurableBackend.SQL:
-                        await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.DurableTask.SqlServer.AzureFunctions');
+                        await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', durableUtils.dotnetDfSqlPackage);
                         break;
                     case DurableBackend.Storage:
                     default:
                 }
 
                 // Seems that the package arrives out-dated and needs to be updated
-                await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', 'Microsoft.Azure.WebJobs.Extensions.DurableTask');
+                await cpUtils.executeCommand(ext.outputChannel, context.projectPath, 'dotnet', 'add', 'package', durableUtils.dotnetDfBasePackage);
             }
         } catch {
             ext.outputChannel.appendLog(localize('funcInstallFailed', 'WARNING: Failed to install and update Durable Functions NuGet packages to the .csproj project file. You may need to configure them manually or start from a clean project.'))

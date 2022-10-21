@@ -9,7 +9,7 @@ import { canValidateAzureWebJobStorageOnDebug } from '../../debug/validatePreDeb
 import { getLocalConnectionString } from '../../funcConfig/local.settings';
 import { localize } from '../../localize';
 import { IFunctionTemplate } from '../../templates/IFunctionTemplate';
-import { isPythonV2Plus } from '../../utils/pythonUtils';
+import { pythonUtils } from '../../utils/pythonUtils';
 import { addBindingSettingSteps } from '../addBinding/settingSteps/addBindingSettingSteps';
 import { AzureWebJobsStorageExecuteStep } from '../appSettings/AzureWebJobsStorageExecuteStep';
 import { AzureWebJobsStoragePromptStep } from '../appSettings/AzureWebJobsStoragePromptStep';
@@ -43,7 +43,7 @@ export class FunctionSubWizard {
         if (template) {
             const promptSteps: AzureWizardPromptStep<IFunctionWizardContext>[] = [];
 
-            const isV2PythonModel = isPythonV2Plus(context.language, context.languageModel);
+            const isV2PythonModel = pythonUtils.isV2Plus(context.language, context.languageModel);
 
             if (isV2PythonModel) {
                 promptSteps.push(new PythonScriptStep());

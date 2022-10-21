@@ -3,7 +3,7 @@
  *  Licensed under the MIT License. See License.txt in the project root for license information.
  *--------------------------------------------------------------------------------------------*/
 
-import { AzExtFsExtra, AzureWizard, AzureWizardExecuteStep, AzureWizardPromptStep, IActionContext, IAzureQuickPickItem, nonNullProp } from "@microsoft/vscode-azext-utils";
+import { AzExtFsExtra, AzureWizard, AzureWizardExecuteStep, AzureWizardPromptStep, IActionContext, IAzureQuickPickItem } from "@microsoft/vscode-azext-utils";
 import * as path from "path";
 import { Uri } from "vscode";
 import * as xml2js from "xml2js";
@@ -25,6 +25,12 @@ import { emptyWorkspace, localize } from "../localize";
 import { findFiles, getWorkspaceRootPath } from "./workspace";
 
 export namespace durableUtils {
+    export const dotnetDfSqlPackage: string = 'Microsoft.DurableTask.SqlServer.AzureFunctions';
+    export const dotnetDfNetheritePackage: string = 'Microsoft.Azure.DurableTask.Netherite.AzureFunctions';
+    export const dotnetDfBasePackage: string = 'Microsoft.Azure.WebJobs.Extensions.DurableTask';
+    export const nodeDfPackage: string = 'durable-functions';
+    export const pythonDfPackage: string = 'azure-functions-durable';
+
     export function requiresDurableStorage(templateId: string): boolean {
         const durableOrchestrator: RegExp = /DurableFunctionsOrchestrat/i;  // Sometimes ends with 'or' or 'ion'
         return durableOrchestrator.test(templateId);
@@ -47,34 +53,36 @@ export namespace durableUtils {
     }
 
     export async function getStorageTypeFromWorkspace(language: string | undefined, projectPath?: string): Promise<DurableBackendValues | undefined> {
-        return await genericWrapWithTryCatch<DurableBackendValues | undefined>(undefined, async () => {
-            projectPath ??= getWorkspaceRootPath();
+        projectPath ??= getWorkspaceRootPath();
+        if (!projectPath) {
+            return;
+        }
 
-            if (!projectPath) {
-                return;
-            }
+        const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
+        if (!hasDurableStorage) {
+            return;
+        }
 
-            const hasDurableStorage: boolean = await verifyHasDurableStorage(language, projectPath);
-            if (!hasDurableStorage) {
-                return;
-            }
+        const hostJsonPath = path.join(projectPath, hostFileName);
+        if (!AzExtFsExtra.pathExists(hostJsonPath)) {
+            return;
+        }
 
-            const hostJsonPath = path.join(projectPath, hostFileName);
-            const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
-            const hostStorageType: DurableBackendValues | undefined = hostJson.extensions?.durableTask?.storageProvider?.type;
+        const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
+        const hostStorageType: DurableBackendValues | undefined = hostJson.extensions?.durableTask?.storageProvider?.type;
 
-            switch (hostStorageType) {
-                case DurableBackend.Netherite:
-                    return DurableBackend.Netherite;
-                case DurableBackend.SQL:
-                    return DurableBackend.SQL;
-                case DurableBackend.Storage:
-                default:
-                    // New DF's will use the more specific type 'DurableBackend.Storage', but legacy implementations may return this value as 'undefined'
-                    return DurableBackend.Storage;
-            }
-        });
-    }
+        switch (hostStorageType) {
+            case DurableBackend.Netherite:
+                return DurableBackend.Netherite;
+            case DurableBackend.SQL:
+                return DurableBackend.SQL;
+            case DurableBackend.Storage:
+            default:
+                // New DF's will use the more specific type 'DurableBackend.Storage', but legacy implementations may return this value as 'undefined'
+                return DurableBackend.Storage;
+        }
+    };
+
 
     // !------ Verify Durable Storage/Dependencies ------
     // Use workspace dependencies as an indicator to check whether this project already has durable storage setup
@@ -96,44 +104,69 @@ export namespace durableUtils {
                 // ???
                 return false;
             case ProjectLanguage.Python:
+                return await pythonProjectHasDurableDependency(projectPath);
             default:
                 return false;
         }
     }
 
     async function nodeProjectHasDurableDependency(projectPath: string): Promise<boolean> {
-        return await genericWrapWithTryCatch<boolean>(false, async () => {
-            const dfPackageName: string = 'durable-functions';
-            const packagePath: string = path.join(projectPath, 'package.json');
-            const packageJson = JSON.parse(await AzExtFsExtra.readFile(packagePath));
-            const dependencies = packageJson.dependencies || {};
-            return !!nonNullProp(dependencies, dfPackageName);
-        });
+        const packagePath: string = path.join(projectPath, 'package.json');
+        if (!AzExtFsExtra.pathExists(packagePath)) {
+            return false;
+        }
+
+        const packageJson: Record<string, any> = await AzExtFsExtra.readJSON(packagePath);
+        const dependencies = packageJson.dependencies || {};
+        return !!dependencies[nodeDfPackage];
     }
 
     async function dotnetProjectHasDurableDependency(projectPath: string): Promise<boolean> {
-        return await genericWrapWithTryCatch<boolean>(false, async () => {
-            const dfPackageName: string = 'Microsoft.Azure.WebJobs.Extensions.DurableTask';
-            const csProjPaths: Uri[] = await findFiles(projectPath, '*.csproj');
-            const csProjContents: string = await AzExtFsExtra.readFile(csProjPaths[0].path);
+        const csProjPaths: Uri[] = await findFiles(projectPath, '*.csproj');
+        if (!csProjPaths?.[0]?.path) {
+            return false;
+        }
 
-            return new Promise((resolve) => {
-                xml2js.parseString(csProjContents, { explicitArray: false }, (err: any, result: any): void => {
-                    if (result && !err) {
-                        const packageReferences = result?.['Project']?.['ItemGroup'][0]?.PackageReference ?? [];
-                        for (const packageRef of packageReferences) {
-                            if (packageRef['$'] && packageRef['$']['Include']) {
-                                if (packageRef['$']['Include'] === dfPackageName) {
-                                    resolve(true);
-                                    return;
-                                }
+        const csProjContents: string = await AzExtFsExtra.readFile(csProjPaths[0].path);
+
+        return new Promise((resolve) => {
+            xml2js.parseString(csProjContents, { explicitArray: false }, (err: any, result: any): void => {
+                if (result && !err) {
+                    const packageReferences = result?.['Project']?.['ItemGroup']?.[0]?.PackageReference ?? [];
+                    for (const packageRef of packageReferences) {
+                        if (packageRef['$'] && packageRef['$']['Include']) {
+                            if (packageRef['$']['Include'] === dotnetDfBasePackage) {
+                                resolve(true);
+                                return;
                             }
                         }
                     }
-                    resolve(false);
-                });
+                }
+                resolve(false);
             });
         });
+    }
+
+    async function pythonProjectHasDurableDependency(projectPath: string): Promise<boolean> {
+        const requirementsPath: string = path.join(projectPath, 'requirements.txt');
+        if (!AzExtFsExtra.pathExists(requirementsPath)) {
+            return false;
+        }
+
+        const contents: string = await AzExtFsExtra.readFile(requirementsPath);
+        const lines: string[] = contents.split('\n');
+
+        for (let line of lines) {
+            line = line.trim();
+            if (!line || line[0] === '#') {
+                continue;
+            }
+            if (line === pythonDfPackage) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     export function getDefaultStorageTaskConfig(): IStorageTaskJson {
@@ -145,14 +178,17 @@ export namespace durableUtils {
     }
 }
 
+
 export namespace netheriteUtils {
     export async function getEventHubName(projectPath: string): Promise<string | undefined> {
-        return await genericWrapWithTryCatch<string | undefined>(undefined, async () => {
-            const hostJsonPath = path.join(projectPath, hostFileName);
-            const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
-            const taskJson: INetheriteTaskJson = hostJson.extensions?.durableTask as INetheriteTaskJson;
-            return taskJson?.hubName;
-        });
+        const hostJsonPath = path.join(projectPath, hostFileName);
+        if (!AzExtFsExtra.pathExists(hostJsonPath)) {
+            return;
+        }
+
+        const hostJson: IHostJsonV2 = await AzExtFsExtra.readJSON(hostJsonPath);
+        const taskJson: INetheriteTaskJson = hostJson.extensions?.durableTask as INetheriteTaskJson;
+        return taskJson?.hubName;
     }
 
     export async function validateConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
@@ -244,13 +280,5 @@ export namespace sqlUtils {
                 schemaName: null
             }
         };
-    }
-}
-
-async function genericWrapWithTryCatch<T>(defaultCatch: T, cb: () => Promise<T>): Promise<T> {
-    try {
-        return await cb();
-    } catch {
-        return defaultCatch;
     }
 }
