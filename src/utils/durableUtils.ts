@@ -31,7 +31,11 @@ export namespace durableUtils {
     export const nodeDfPackage: string = 'durable-functions';
     export const pythonDfPackage: string = 'azure-functions-durable';
 
-    export function requiresDurableStorage(templateId: string): boolean {
+    export function requiresDurableStorage(templateId: string, language?: string): boolean {
+        // Todo: Remove when powershell and java logic is added
+        if (language === ProjectLanguage.PowerShell || language === ProjectLanguage.Java) {
+            return false;
+        }
         const durableOrchestrator: RegExp = /DurableFunctionsOrchestrat/i;  // Sometimes ends with 'or' or 'ion'
         return durableOrchestrator.test(templateId);
     }
@@ -94,6 +98,9 @@ export namespace durableUtils {
         }
 
         switch (language) {
+            case ProjectLanguage.Java:
+                // ???
+                return false;
             case ProjectLanguage.JavaScript:
             case ProjectLanguage.TypeScript:
                 return await nodeProjectHasDurableDependency(projectPath);

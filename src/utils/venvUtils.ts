@@ -37,7 +37,7 @@ export namespace venvUtils {
         if (await AzExtFsExtra.pathExists(requirementsPath)) {
             try {
                 // Attempt to install packages so that users get Intellisense right away
-                await venvUtils.runCommandInVenv(`pip install -r ${requirementsFileName}`, <string>venvName, projectPath);
+                await runCommandInVenv(`pip install -r ${requirementsFileName}`, <string>venvName, projectPath);
             } catch {
                 ext.outputChannel.appendLog(localize('pipInstallFailure', 'WARNING: Failed to install packages in your virtual environment. Run "pip install" manually instead.'));
             }

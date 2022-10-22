@@ -59,7 +59,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
     public async getSubWizard(context: IFunctionWizardContext): Promise<IWizardOptions<IFunctionWizardContext> | undefined> {
         const isV2PythonModel = pythonUtils.isV2Plus(context.language, context.languageModel);
 
-        const needsStorageSetup: boolean = !!context.functionTemplate && durableUtils.requiresDurableStorage(context.functionTemplate.id) && !context.hasDurableStorage;
+        const needsStorageSetup: boolean = !!context.functionTemplate && durableUtils.requiresDurableStorage(context.functionTemplate.id, context.language) && !context.hasDurableStorage;
         if (needsStorageSetup) {
             context.newDurableStorageType = await durableUtils.promptForStorageType(context);
         }
@@ -124,7 +124,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         const templates: IFunctionTemplate[] = await templateProvider.getFunctionTemplates(context, context.projectPath, language, context.languageModel, version, templateFilter, context.projectTemplateKey);
         context.telemetry.measurements.templateCount = templates.length;
         const picks: IAzureQuickPickItem<IFunctionTemplate | TemplatePromptResult>[] = templates
-            .filter((t) => !(isDfTemplateButNotOrchestrator(t.id) && !context.hasDurableStorage))
+            .filter((t) => !(isDfTemplateButNotOrchestrator(t.id, language) && !context.hasDurableStorage))
             .sort((a, b) => sortTemplates(a, b, templateFilter))
             .map(t => { return { label: t.name, data: t }; });
 
@@ -191,7 +191,12 @@ async function promptForTemplateFilter(context: IActionContext): Promise<Templat
 }
 
 // Identify and filter out Durable Functions Templates that aren't Orchestrator Templates if no existing storage connection is detected
-function isDfTemplateButNotOrchestrator(templateId: string): boolean {
+function isDfTemplateButNotOrchestrator(templateId: string, language?: string): boolean {
+    // Todo: remove when logic for df powershell and java is added
+    if (language === ProjectLanguage.PowerShell || language === ProjectLanguage.Java) {
+        return false;
+    }
+
     const durableFunctions = /DurableFunctions/i;
     const orchestrator = /orchestrat/i;
 
