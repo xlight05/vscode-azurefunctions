@@ -124,7 +124,7 @@ export class FunctionListStep extends AzureWizardPromptStep<IFunctionWizardConte
         const templates: IFunctionTemplate[] = await templateProvider.getFunctionTemplates(context, context.projectPath, language, context.languageModel, version, templateFilter, context.projectTemplateKey);
         context.telemetry.measurements.templateCount = templates.length;
         const picks: IAzureQuickPickItem<IFunctionTemplate | TemplatePromptResult>[] = templates
-            .filter((t) => !(isDfTemplateButNotOrchestrator(t.id, language) && !context.hasDurableStorage))
+            .filter((t) => !(doesTemplateRequireExistingStorageSetup(t.id, language) && !context.hasDurableStorage))
             .sort((a, b) => sortTemplates(a, b, templateFilter))
             .map(t => { return { label: t.name, data: t }; });
 
@@ -190,17 +190,19 @@ async function promptForTemplateFilter(context: IActionContext): Promise<Templat
     return (await context.ui.showQuickPick(picks, options)).data;
 }
 
-// Identify and filter out Durable Functions Templates that aren't Orchestrator Templates if no existing storage connection is detected
-function isDfTemplateButNotOrchestrator(templateId: string, language?: string): boolean {
+// Identify and filter out Durable Function templates requiring a pre-existing storage setup
+function doesTemplateRequireExistingStorageSetup(templateId: string, language?: string): boolean {
     // Todo: Remove when Powershell and Java implementation is added
     if (language === ProjectLanguage.PowerShell || language === ProjectLanguage.Java) {
         return false;
     }
 
     const durableFunctions = /DurableFunctions/i;
-    const orchestrator = /orchestrat/i;
+    const entity = /DurableFunctionsEntity/i;
+    const orchestrator = /Orchestrat/i;
+    const entityTrigger = /DurableFunctionsEntityHttpStart/i;  // filter out directly due to overlap with the base entity template pattern
 
-    if (durableFunctions.test(templateId) && !orchestrator.test(templateId)) {
+    if (entityTrigger.test(templateId) || (durableFunctions.test(templateId) && !orchestrator.test(templateId) && !entity.test(templateId))) {
         return true;
     } else {
         return false;

@@ -36,8 +36,11 @@ export namespace durableUtils {
         if (language === ProjectLanguage.PowerShell || language === ProjectLanguage.Java) {
             return false;
         }
+
+        const durableEntity = /DurableFunctionsEntity/i;
         const durableOrchestrator: RegExp = /DurableFunctionsOrchestrat/i;  // Sometimes ends with 'or' or 'ion'
-        return durableOrchestrator.test(templateId);
+
+        return durableOrchestrator.test(templateId) || durableEntity.test(templateId);
     }
 
     export async function promptForStorageType(context: IFunctionWizardContext): Promise<DurableBackendValues> {
