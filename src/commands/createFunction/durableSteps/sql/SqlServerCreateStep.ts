@@ -29,14 +29,6 @@ export class SqlServerCreateStep<T extends ISqlDatabaseConnectionWizardContext> 
             location: (await LocationListStep.getLocation(<ILocationWizardContext>context)).name,
             administratorLogin: nonNullValue(context.newSqlAdminUsername),
             administratorLoginPassword: nonNullValue(context.newSqlAdminPassword),
-            // administrators: {
-            //     administratorType: 'ActiveDirectory',
-            //     principalType: 'User',
-            //     login: context.userId,
-            //     sid: '....',
-            //     tenantId: context.tenantId,
-            //     azureADOnlyAuthentication: false
-            // }
         };
 
         context.sqlServer = await client.servers.beginCreateOrUpdateAndWait(rgName, newServerName, serverOptions);
