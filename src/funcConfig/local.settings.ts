@@ -29,7 +29,6 @@ export async function getLocalConnectionString(context: IActionContext, connecti
     }
 
     projectPath ??= getWorkspaceRootPath();
-
     if (!projectPath) {
         return;
     }
@@ -40,7 +39,6 @@ export async function getLocalConnectionString(context: IActionContext, connecti
 
 export async function validateStorageConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
     projectPath ??= getWorkspaceRootPath();
-
     if (!projectPath) {
         throw new Error(emptyWorkspace);
     }

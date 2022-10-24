@@ -95,7 +95,6 @@ export namespace durableUtils {
     // Use workspace dependencies as an indicator to check whether this project already has durable storage setup
     export async function verifyHasDurableStorage(language: string | undefined, projectPath?: string): Promise<boolean> {
         projectPath ??= getWorkspaceRootPath();
-
         if (!projectPath) {
             return false;
         }
@@ -191,7 +190,6 @@ export namespace netheriteUtils {
 
     export async function getEventHubName(projectPath?: string): Promise<string | undefined> {
         projectPath ??= getWorkspaceRootPath();
-
         if (!projectPath) {
             throw new Error(emptyWorkspace);
         }
@@ -208,7 +206,6 @@ export namespace netheriteUtils {
 
     export async function validateConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
         projectPath ??= getWorkspaceRootPath();
-
         if (!projectPath) {
             throw new Error(emptyWorkspace);
         }
@@ -262,7 +259,6 @@ export namespace netheriteUtils {
 export namespace sqlUtils {
     export async function validateConnection(context: IActionContext, options?: Omit<IValidateConnectionOptions, 'suppressSkipForNow'>, projectPath?: string): Promise<void> {
         projectPath ??= getWorkspaceRootPath();
-
         if (!projectPath) {
             throw new Error(emptyWorkspace);
         }

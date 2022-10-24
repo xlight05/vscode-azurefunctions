@@ -17,7 +17,6 @@ export namespace pythonUtils {
 
     export async function addDependencyToRequirements(dependency: string, projectPath?: string): Promise<void> {
         projectPath ??= getWorkspaceRootPath();
-
         if (!projectPath) {
             throw new Error(emptyWorkspace);
         }

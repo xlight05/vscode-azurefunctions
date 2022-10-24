@@ -22,8 +22,8 @@ export namespace venvUtils {
 
     export async function runPipInstallCommandIfPossible(venvName?: string, projectPath?: string): Promise<void> {
         venvName ??= getWorkspaceSetting(pythonVenvSetting) || '.venv';
-        projectPath ??= getWorkspaceRootPath();
 
+        projectPath ??= getWorkspaceRootPath();
         if (!projectPath) {
             throw new Error(emptyWorkspace);
         }
