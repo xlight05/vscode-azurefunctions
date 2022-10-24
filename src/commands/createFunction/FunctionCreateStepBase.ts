@@ -100,7 +100,7 @@ export abstract class FunctionCreateStepBase<T extends IFunctionWizardContext> e
             }
 
             await AzExtFsExtra.writeJSON(hostJsonPath, hostJson);
-        } catch (error) {
+        } catch {
             ext.outputChannel.appendLog(hostJsonConfigFailed);
         }
     }
