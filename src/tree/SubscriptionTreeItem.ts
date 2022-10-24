@@ -12,7 +12,7 @@ import { FunctionAppCreateStep } from '../commands/createFunctionApp/FunctionApp
 import { FunctionAppHostingPlanStep, setConsumptionPlanProperties } from '../commands/createFunctionApp/FunctionAppHostingPlanStep';
 import { IFunctionAppWizardContext } from '../commands/createFunctionApp/IFunctionAppWizardContext';
 import { FunctionAppStackStep } from '../commands/createFunctionApp/stacks/FunctionAppStackStep';
-import { ConnectionKey, DurableBackendValues, funcVersionSetting, localEventHubsEmulatorConnectionStringDefault, localStorageEmulatorConnectionString, projectLanguageSetting } from '../constants';
+import { ConnectionKey, DurableBackendValues, funcVersionSetting, localEventHubsEmulatorConnectionRegExp, localStorageEmulatorConnectionString, projectLanguageSetting } from '../constants';
 import { ext } from '../extensionVariables';
 import { getLocalConnectionString } from '../funcConfig/local.settings';
 import { tryGetLocalFuncVersion } from '../funcCoreTools/tryGetLocalFuncVersion';
@@ -93,7 +93,7 @@ export class SubscriptionTreeItem extends SubscriptionTreeItemBase {
         context.telemetry.properties.projectHasAzureStorageConnection = String(hasAzureStorageConnection);
 
         const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub);
-        const hasEventHubsConnection: boolean = !!eventHubsConnection && eventHubsConnection !== localEventHubsEmulatorConnectionStringDefault;
+        const hasEventHubsConnection: boolean = !!eventHubsConnection && !localEventHubsEmulatorConnectionRegExp.test(eventHubsConnection);
         context.telemetry.properties.projectHasEventHubsConnection = String(hasEventHubsConnection);
 
         const sqlDbConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL);

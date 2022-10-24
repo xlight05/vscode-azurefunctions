@@ -7,7 +7,7 @@ import { SiteConfigResource, StringDictionary } from '@azure/arm-appservice';
 import { deploy as innerDeploy, getDeployFsPath, getDeployNode, IDeployContext, IDeployPaths, showDeployConfirmation, SiteClient } from '@microsoft/vscode-azext-azureappservice';
 import { DialogResponses, IActionContext } from '@microsoft/vscode-azext-utils';
 import * as vscode from 'vscode';
-import { ConnectionKey, ConnectionKeyValues, ConnectionType, deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, localEventHubsEmulatorConnectionStringDefault, localStorageEmulatorConnectionString, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
+import { ConnectionKey, ConnectionKeyValues, ConnectionType, deploySubpathSetting, DurableBackend, DurableBackendValues, functionFilter, localEventHubsEmulatorConnectionRegExp, localStorageEmulatorConnectionString, ProjectLanguage, remoteBuildSetting, ScmType } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { getLocalConnectionString, validateStorageConnection } from '../../funcConfig/local.settings';
 import { addLocalFuncTelemetry } from '../../funcCoreTools/getLocalFuncCoreToolsVersion';
@@ -209,7 +209,7 @@ export async function shouldValidateConnections(context: IActionContext, durable
         !hasValidNetheriteHubName ||
         (!remoteEventHubsConnection ||
             (!!localEventHubsConnection &&
-                localEventHubsConnection !== localEventHubsEmulatorConnectionStringDefault &&
+                !localEventHubsEmulatorConnectionRegExp.test(localEventHubsConnection) &&
                 remoteEventHubsConnection !== localEventHubsConnection &&
                 await promptShouldOverwrite(context, ConnectionKey.EventHub)));
 

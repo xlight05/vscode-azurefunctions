@@ -18,7 +18,7 @@ import { NetheriteConfigureHostStep } from "../commands/createFunction/durableSt
 import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep";
 import { SqlDatabaseListStep } from "../commands/createFunction/durableSteps/sql/SqlDatabaseListStep";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
-import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, localEventHubsEmulatorConnectionStringDefault, ProjectLanguage } from "../constants";
+import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, localEventHubsEmulatorConnectionRegExp, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { getLocalConnectionString } from "../funcConfig/local.settings";
 import { emptyWorkspace, localize } from "../localize";
@@ -211,7 +211,7 @@ export namespace netheriteUtils {
         }
 
         const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
-        const hasEventHubsConnection: boolean = !!eventHubsConnection && eventHubsConnection !== localEventHubsEmulatorConnectionStringDefault;
+        const hasEventHubsConnection: boolean = !!eventHubsConnection && !localEventHubsEmulatorConnectionRegExp.test(eventHubsConnection);
 
         const eventHubName: string | undefined = await getEventHubName(projectPath);
         const hasValidEventHubName: boolean = !!eventHubName && eventHubName !== netheriteUtils.defaultNetheriteHubName;
