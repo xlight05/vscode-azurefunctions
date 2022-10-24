@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Database, Server, SqlManagementClient } from '@azure/arm-sql';
-import { uiUtils } from '@microsoft/vscode-azext-azureutils';
+import { parseAzureResourceId, uiUtils } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardExecuteStep, AzureWizardPromptStep, IAzureQuickPickItem, IAzureQuickPickOptions, ISubscriptionContext, IWizardOptions, nonNullProp, nonNullValue } from '@microsoft/vscode-azext-utils';
 import { ConnectionType } from '../../../../constants';
 import { localize } from '../../../../localize';
@@ -21,8 +21,8 @@ export class SqlDatabaseListStep<T extends ISqlDatabaseConnectionWizardContext> 
         }
 
         const client: SqlManagementClient = await createSqlClient(<T & ISubscriptionContext>context);
-        const rgName: string = nonNullValue(context.resourceGroup?.name);
-        const serverName: string = nonNullValue(context.sqlServer?.name);
+        const rgName: string = parseAzureResourceId(nonNullValue(context.sqlServer.id)).resourceGroup;
+        const serverName: string = nonNullValue(context.sqlServer.name);
 
         const quickPickOptions: IAzureQuickPickOptions = { placeHolder: 'Select a SQL database.' };
         const picksTask: Promise<IAzureQuickPickItem<Database | undefined>[]> = this.getQuickPicks(uiUtils.listAllIterator(client.databases.listByServer(rgName, serverName)));

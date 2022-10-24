@@ -8,7 +8,7 @@ export class SqlDatabaseConnectionCustomPromptStep<T extends ISqlDatabaseConnect
     public async prompt(context: T): Promise<void> {
         context.nonAzureSqlConnection = (await context.ui.showInputBox({
             prompt: localize('customSqlConnectionPrompt', 'Enter a custom SQL connection string.'),
-            validateInput: (value: string | undefined) => this.validateInput(value)
+            validateInput: (value: string | undefined) => this._validateInput(value)
         })).trim();
     }
 
@@ -16,7 +16,7 @@ export class SqlDatabaseConnectionCustomPromptStep<T extends ISqlDatabaseConnect
         return !context.nonAzureSqlConnection && context.sqlDbConnectionType === ConnectionType.NonAzure;
     }
 
-    private validateInput(name: string | undefined): string | undefined {
+    private _validateInput(name: string | undefined): string | undefined {
         name = name ? name.trim() : '';
 
         if (!validateUtils.isValidLength(name)) {

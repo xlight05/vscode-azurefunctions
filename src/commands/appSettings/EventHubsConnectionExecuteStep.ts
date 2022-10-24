@@ -4,8 +4,8 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { AzureWizardExecuteStep, ISubscriptionContext } from '@microsoft/vscode-azext-utils';
-import { ConnectionKey, ConnectionType, localEventHubsEmulatorConnectionString } from '../../constants';
-import { MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
+import { ConnectionKey, ConnectionType, localEventHubsEmulatorConnectionRegExp, localEventHubsEmulatorConnectionStringDefault } from '../../constants';
+import { getLocalConnectionString, MismatchBehavior, setLocalAppSetting } from '../../funcConfig/local.settings';
 import { getEventHubsConnectionString } from '../../utils/azure';
 import { IEventHubsConnectionWizardContext } from './IEventHubsConnectionWizardContext';
 
@@ -19,7 +19,11 @@ export class EventHubsConnectionExecuteStep<T extends IEventHubsConnectionWizard
     public async execute(context: T): Promise<void> {
         let value: string;
         if (context.eventHubConnectionType === ConnectionType.NonAzure) {
-            value = localEventHubsEmulatorConnectionString;
+            const currentConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, context.projectPath);
+            if (currentConnection && localEventHubsEmulatorConnectionRegExp.test(currentConnection)) {
+                return;
+            }
+            value = localEventHubsEmulatorConnectionStringDefault;
         } else {
             value = (await getEventHubsConnectionString(<T & ISubscriptionContext>context)).connectionString;
         }

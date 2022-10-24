@@ -192,7 +192,7 @@ async function promptForTemplateFilter(context: IActionContext): Promise<Templat
 
 // Identify and filter out Durable Functions Templates that aren't Orchestrator Templates if no existing storage connection is detected
 function isDfTemplateButNotOrchestrator(templateId: string, language?: string): boolean {
-    // Todo: remove when logic for df powershell and java is added
+    // Todo: Remove when Powershell and Java implementation is added
     if (language === ProjectLanguage.PowerShell || language === ProjectLanguage.Java) {
         return false;
     }

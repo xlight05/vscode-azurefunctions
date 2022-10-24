@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Eventhub, EventHubManagementClient } from '@azure/arm-eventhub';
-import { uiUtils } from '@microsoft/vscode-azext-azureutils';
+import { parseAzureResourceId, uiUtils } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardPromptStep, ISubscriptionContext, nonNullValue } from '@microsoft/vscode-azext-utils';
 import { ConnectionType } from '../../../../constants';
 import { invalidLength, invalidLowerCaseAlphanumericWithHyphens, localize } from '../../../../localize';
@@ -19,29 +19,27 @@ export class NetheriteEventHubNameStep<T extends IEventHubsConnectionWizardConte
     public async prompt(context: T): Promise<void> {
         // Prep to check name availability, else it must be new and we can skip the name availability check
         if (context.eventHubsNamespace) {
-            try {
-                const client: EventHubManagementClient = await createEventHubClient(<T & ISubscriptionContext>context);
-                const rgName: string = nonNullValue(context.resourceGroup?.name);
-                const ehNamespaceName: string = nonNullValue(context.eventHubsNamespace.name);
+            const client: EventHubManagementClient = await createEventHubClient(<T & ISubscriptionContext>context);
+            const rgName: string = parseAzureResourceId(nonNullValue(context.eventHubsNamespace.id)).resourceGroup;
+            const ehNamespaceName: string = nonNullValue(context.eventHubsNamespace.name);
 
-                const eventHubIterator = await client.eventHubs.listByNamespace(rgName, ehNamespaceName);
-                this._eventHubs = await uiUtils.listAllIterator(eventHubIterator);
-            } catch { /* Catches the case where an older created resource group is chosen and that group is not home to the event hub namespace */ }
+            const eventHubIterator = await client.eventHubs.listByNamespace(rgName, ehNamespaceName);
+            this._eventHubs = await uiUtils.listAllIterator(eventHubIterator);
         }
 
         context.newEventHubName = (await context.ui.showInputBox({
             prompt: localize('eventHubNamePrompt', 'Enter a name for the new event hub.'),
             validateInput: (value: string | undefined) => {
-                return this.validateInput(value)
+                return this._validateInput(value)
             }
         })).trim();
     }
 
     public shouldPrompt(context: T): boolean {
-        return !context.newEventHubName && context.eventHubConnectionType !== ConnectionType.None;
+        return !context.newEventHubName && context.eventHubConnectionType === ConnectionType.Azure;
     }
 
-    private validateInput(name: string | undefined): string | undefined {
+    private _validateInput(name: string | undefined): string | undefined {
         name = name ? name.trim() : '';
 
         if (!validateUtils.isValidLength(name, 1, 256)) {

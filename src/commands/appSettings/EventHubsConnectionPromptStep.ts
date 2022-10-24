@@ -5,8 +5,9 @@
 
 import { AzureWizardPromptStep, ISubscriptionActionContext, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import { MessageItem } from 'vscode';
-import { ConnectionType } from '../../constants';
+import { ConnectionKey, ConnectionType, localEventHubsEmulatorConnectionRegExp } from '../../constants';
 import { ext } from '../../extensionVariables';
+import { getLocalConnectionString } from '../../funcConfig/local.settings';
 import { localize, skipForNow, useEmulator } from '../../localize';
 import { EventHubsNamespaceListStep } from '../createFunction/durableSteps/netherite/EventHubsNamespaceListStep';
 import { IConnectionPromptOptions } from './IConnectionPrompOptions';
@@ -57,6 +58,13 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
 
     public async getSubWizard(context: T): Promise<IWizardOptions<T & ISubscriptionActionContext> | undefined> {
         if (context.eventHubConnectionType === ConnectionType.Azure) {
+            // If the user wants to connect through Azure (usually during debug) but an Azure connection is already in the local settings, just use that instead
+            const eventHubConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, context.projectPath);
+            if (!!eventHubConnection && !localEventHubsEmulatorConnectionRegExp.test(eventHubConnection)) {
+                context.eventHubConnectionType = ConnectionType.None;
+                return;
+            }
+
             const promptSteps: AzureWizardPromptStep<T & ISubscriptionActionContext>[] = [];
 
             const subscriptionPromptStep: AzureWizardPromptStep<ISubscriptionActionContext> | undefined = await ext.azureAccountTreeItem.getSubscriptionPromptStep(context);

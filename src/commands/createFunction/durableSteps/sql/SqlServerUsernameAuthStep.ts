@@ -12,7 +12,7 @@ export class SqlServerUsernameAuthStep<T extends ISqlDatabaseConnectionWizardCon
     public async prompt(context: T): Promise<void> {
         context.newSqlAdminUsername = (await context.ui.showInputBox({
             prompt: localize('sqlServerUsernamePrompt', 'Enter an admin username for the new SQL server.'),
-            validateInput: (value: string | undefined) => this.validateInput(value)
+            validateInput: (value: string | undefined) => this._validateInput(value)
         })).trim();
 
         context.valuesToMask.push(nonNullProp(context, 'newSqlAdminUsername'));
@@ -22,7 +22,7 @@ export class SqlServerUsernameAuthStep<T extends ISqlDatabaseConnectionWizardCon
         return !context.newSqlAdminUsername;
     }
 
-    private validateInput(name: string | undefined): string | undefined {
+    private _validateInput(name: string | undefined): string | undefined {
         name = name ? name.trim() : '';
 
         if (!validateUtils.isValidLength(name)) {

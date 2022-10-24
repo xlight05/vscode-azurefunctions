@@ -5,8 +5,9 @@
 
 import { AzureWizardPromptStep, ISubscriptionActionContext, IWizardOptions } from '@microsoft/vscode-azext-utils';
 import { MessageItem } from 'vscode';
-import { ConnectionType } from '../../constants';
+import { ConnectionKey, ConnectionType } from '../../constants';
 import { ext } from '../../extensionVariables';
+import { getLocalConnectionString } from '../../funcConfig/local.settings';
 import { localize, skipForNow } from '../../localize';
 import { SqlServerListStep } from '../createFunction/durableSteps/sql/SqlServerListStep';
 import { IConnectionPromptOptions } from './IConnectionPrompOptions';
@@ -27,6 +28,7 @@ export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWiz
 
         const connectAzureDatabase: MessageItem = { title: localize('connectSqlDatabase', 'Connect Azure SQL Database') };
         const connectNonAzureDatabase: MessageItem = { title: localize('connectSqlDatabase', 'Connect Non-Azure SQL Database') };
+        const useExistingConnectionButton: MessageItem = { title: localize('useExistingConnection', 'Use Existing Connection') };
         const skipForNowButton: MessageItem = { title: skipForNow };
 
         const message: string = localize('selectSqlDatabaseConnection', 'In order to proceed, you must connect a SQL database for internal use by the Azure Functions runtime.');
@@ -35,6 +37,12 @@ export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWiz
 
         if (!this._options?.suppressSkipForNow) {
             buttons.push(skipForNowButton);
+        } else if (this._options?.suppressSkipForNow && !context.sqlDbConnectionForDeploy) {
+            // On debug, give user the option to run from an existing local connection string
+            const existingConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.SQL, context.projectPath);
+            if (!!existingConnection) {
+                buttons.push(useExistingConnectionButton);
+            }
         }
 
         const result: MessageItem = await context.ui.showWarningMessage(message, { modal: true }, ...buttons);

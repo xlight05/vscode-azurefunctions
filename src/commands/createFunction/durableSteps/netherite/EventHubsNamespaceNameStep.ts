@@ -18,7 +18,7 @@ export class EventHubsNamespaceNameStep<T extends IEventHubsConnectionWizardCont
         this._client = await createEventHubClient(<T & ISubscriptionContext>context);
         context.newEventHubsNamespaceName = (await context.ui.showInputBox({
             prompt: localize('eventHubNamePrompt', 'Enter a name for the new event hubs namespace.'),
-            validateInput: async (value: string | undefined) => await this.validateInput(value)
+            validateInput: async (value: string | undefined) => await this._validateInput(value)
         })).trim();
     }
 
@@ -26,7 +26,7 @@ export class EventHubsNamespaceNameStep<T extends IEventHubsConnectionWizardCont
         return !context.eventHubsNamespace && !context.newEventHubsNamespaceName;
     }
 
-    private async validateInput(name: string | undefined): Promise<string | undefined> {
+    private async _validateInput(name: string | undefined): Promise<string | undefined> {
         name = name ? name.trim() : '';
 
         if (!validateUtils.isValidLength(name, 6, 50)) {
@@ -35,7 +35,7 @@ export class EventHubsNamespaceNameStep<T extends IEventHubsConnectionWizardCont
         if (!validateUtils.isAlphanumericWithHypens(name)) {
             return invalidAlphanumericWithHyphens;
         }
-        await delay(1000);
+        await delay(500);
 
         const isNameAvailable: boolean = !!(await this._client.namespaces.checkNameAvailability({ name })).nameAvailable;
         if (!isNameAvailable) {

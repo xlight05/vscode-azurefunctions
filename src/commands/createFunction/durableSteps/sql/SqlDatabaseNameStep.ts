@@ -30,7 +30,7 @@ export class SqlDatabaseNameStep<T extends ISqlDatabaseConnectionWizardContext> 
 
         context.newSqlDatabaseName = (await context.ui.showInputBox({
             prompt: localize('sqlDatabaseNamePrompt', 'Enter a name the new SQL database.'),
-            validateInput: (value: string | undefined) => this.validateInput(value)
+            validateInput: (value: string | undefined) => this._validateInput(value)
         })).trim();
     }
 
@@ -38,7 +38,7 @@ export class SqlDatabaseNameStep<T extends ISqlDatabaseConnectionWizardContext> 
         return !context.newSqlDatabaseName && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 
-    private validateInput(name: string | undefined): string | undefined {
+    private _validateInput(name: string | undefined): string | undefined {
         name = name ? name.trim() : '';
 
         if (!validateUtils.isValidLength(name, 6, 50)) {

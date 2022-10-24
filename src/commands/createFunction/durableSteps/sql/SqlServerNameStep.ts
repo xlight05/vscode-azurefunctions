@@ -19,7 +19,7 @@ export class SqlServerNameStep<T extends ISqlDatabaseConnectionWizardContext> ex
 
         context.newSqlServerName = (await context.ui.showInputBox({
             prompt: localize('sqlServerNamePrompt', 'Enter a name the new SQL server.'),
-            validateInput: async (value: string | undefined) => await this.validateInput(value)
+            validateInput: async (value: string | undefined) => await this._validateInput(value)
         })).trim();
     }
 
@@ -27,7 +27,7 @@ export class SqlServerNameStep<T extends ISqlDatabaseConnectionWizardContext> ex
         return !context.newSqlServerName;
     }
 
-    private async validateInput(name: string | undefined): Promise<string | undefined> {
+    private async _validateInput(name: string | undefined): Promise<string | undefined> {
         name = name ? name.trim() : '';
 
         if (!validateUtils.isValidLength(name, 1, 63)) {
@@ -36,7 +36,7 @@ export class SqlServerNameStep<T extends ISqlDatabaseConnectionWizardContext> ex
         if (!validateUtils.isLowerCaseAlphanumericWithHypens(name)) {
             return invalidLowerCaseAlphanumericWithHyphens;
         }
-        delay(1000);
+        delay(500);
 
         const isNameAvailable: boolean | undefined = (await this._client.servers.checkNameAvailability({ name, type: "Microsoft.Sql/servers" })).available;
         if (!isNameAvailable) {

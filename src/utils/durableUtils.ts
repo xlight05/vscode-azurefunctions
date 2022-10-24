@@ -18,7 +18,7 @@ import { NetheriteConfigureHostStep } from "../commands/createFunction/durableSt
 import { NetheriteEventHubNameStep } from "../commands/createFunction/durableSteps/netherite/NetheriteEventHubNameStep";
 import { SqlDatabaseListStep } from "../commands/createFunction/durableSteps/sql/SqlDatabaseListStep";
 import { IFunctionWizardContext } from "../commands/createFunction/IFunctionWizardContext";
-import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, localEventHubsEmulatorConnectionString, ProjectLanguage } from "../constants";
+import { ConnectionKey, DurableBackend, DurableBackendValues, hostFileName, localEventHubsEmulatorConnectionStringDefault, ProjectLanguage } from "../constants";
 import { IHostJsonV2, INetheriteTaskJson, ISqlTaskJson, IStorageTaskJson } from "../funcConfig/host";
 import { getLocalConnectionString } from "../funcConfig/local.settings";
 import { emptyWorkspace, localize } from "../localize";
@@ -32,7 +32,7 @@ export namespace durableUtils {
     export const pythonDfPackage: string = 'azure-functions-durable';
 
     export function requiresDurableStorage(templateId: string, language?: string): boolean {
-        // Todo: Remove when powershell and java logic is added
+        // Todo: Remove when Powershell and Java implementation is added
         if (language === ProjectLanguage.PowerShell || language === ProjectLanguage.Java) {
             return false;
         }
@@ -165,9 +165,6 @@ export namespace durableUtils {
 
         for (let line of lines) {
             line = line.trim();
-            if (!line || line[0] === '#') {
-                continue;
-            }
             if (line === pythonDfPackage) {
                 return true;
             }
@@ -187,7 +184,15 @@ export namespace durableUtils {
 
 
 export namespace netheriteUtils {
-    export async function getEventHubName(projectPath: string): Promise<string | undefined> {
+    export const defaultNetheriteHubName: string = 'HelloNetheriteHub';  // Arbitrary placeholder for running in emulator mode until an Azure connection is setup
+
+    export async function getEventHubName(projectPath?: string): Promise<string | undefined> {
+        projectPath ??= getWorkspaceRootPath();
+
+        if (!projectPath) {
+            throw new Error(emptyWorkspace);
+        }
+
         const hostJsonPath = path.join(projectPath, hostFileName);
         if (!AzExtFsExtra.pathExists(hostJsonPath)) {
             return;
@@ -206,22 +211,23 @@ export namespace netheriteUtils {
         }
 
         const eventHubsConnection: string | undefined = await getLocalConnectionString(context, ConnectionKey.EventHub, projectPath);
-        const hasEventHubsConnection: boolean = !!eventHubsConnection && eventHubsConnection !== localEventHubsEmulatorConnectionString;
+        const hasEventHubsConnection: boolean = !!eventHubsConnection && eventHubsConnection !== localEventHubsEmulatorConnectionStringDefault;
 
         const eventHubName: string | undefined = await getEventHubName(projectPath);
+        const hasValidEventHubName: boolean = !!eventHubName && eventHubName !== netheriteUtils.defaultNetheriteHubName;
 
         const wizardContext: IEventHubsConnectionWizardContext = Object.assign(context, { projectPath });
         const promptSteps: AzureWizardPromptStep<IEventHubsConnectionWizardContext>[] = [];
         const executeSteps: AzureWizardExecuteStep<IEventHubsConnectionWizardContext>[] = [];
 
-        if (hasEventHubsConnection && options?.setConnectionForDeploy) {
+        if (hasEventHubsConnection && hasValidEventHubName && options?.setConnectionForDeploy) {
             Object.assign(context, { eventHubConnectionForDeploy: eventHubsConnection });
         } else {
             promptSteps.push(new EventHubsConnectionPromptStep({ preSelectedConnectionType: options?.preSelectedConnectionType, suppressSkipForNow: true }));
             executeSteps.push(new EventHubsConnectionExecuteStep(options?.setConnectionForDeploy));
         }
 
-        if (!eventHubName) {
+        if (!hasValidEventHubName) {
             promptSteps.push(new NetheriteEventHubNameStep());
         }
 
@@ -238,7 +244,7 @@ export namespace netheriteUtils {
 
     export function getDefaultNetheriteTaskConfig(hubName?: string): INetheriteTaskJson {
         return {
-            hubName: hubName || "",
+            hubName: hubName || defaultNetheriteHubName,
             useGracefulShutdown: true,
             storageProvider: {
                 type: DurableBackend.Netherite,
@@ -264,8 +270,8 @@ export namespace sqlUtils {
         if (hasSqlDbConnection) {
             if (options?.setConnectionForDeploy) {
                 Object.assign(context, { sqlDbConnectionForDeploy: sqlDbConnection });
+                return;
             }
-            return;
         }
 
         const wizardContext: ISqlDatabaseConnectionWizardContext = Object.assign(context, { projectPath });

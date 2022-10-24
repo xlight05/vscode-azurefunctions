@@ -160,26 +160,25 @@ async function validateWorkerRuntime(context: IActionContext, projectLanguage: s
 }
 
 async function validateAzureWebJobsStorage(context: IActionContext, projectLanguage: string | undefined, projectLanguageModel: number | undefined, projectPath: string, requiresDurableStorage: boolean): Promise<void> {
-    if (canValidateAzureWebJobStorageOnDebug(projectLanguage) || requiresDurableStorage) {
-        const azureWebJobsStorage: string | undefined = await getLocalConnectionString(context, ConnectionKey.Storage, projectPath);
-        if (!azureWebJobsStorage) {
-            const functionFolders: string[] = await getFunctionFolders(context, projectPath);
-            const functions: ParsedFunctionJson[] = await Promise.all(functionFolders.map(async ff => {
-                const functionJsonPath: string = path.join(projectPath, ff, functionJsonFileName);
-                return new ParsedFunctionJson(await AzExtFsExtra.readJSON(functionJsonPath));
-            }));
+    if (!(canValidateAzureWebJobStorageOnDebug(projectLanguage) || requiresDurableStorage)) {
+        return;
+    }
 
-            // NOTE: Currently, Python V2+ requires storage to be configured, even for HTTP triggers.
-            if (functions.some(f => !f.isHttpTrigger) || pythonUtils.isV2Plus(projectLanguage, projectLanguageModel) || requiresDurableStorage) {
-                const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
-                const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
-                    promptSteps: [new AzureWebJobsStoragePromptStep({ suppressSkipForNow: true })],
-                    executeSteps: [new AzureWebJobsStorageExecuteStep()]
-                });
-                await wizard.prompt();
-                await wizard.execute();
-            }
-        }
+    const functionFolders: string[] = await getFunctionFolders(context, projectPath);
+    const functions: ParsedFunctionJson[] = await Promise.all(functionFolders.map(async ff => {
+        const functionJsonPath: string = path.join(projectPath, ff, functionJsonFileName);
+        return new ParsedFunctionJson(await AzExtFsExtra.readJSON(functionJsonPath));
+    }));
+
+    // NOTE: Currently, Python V2+ requires storage to be configured, even for HTTP triggers.
+    if (functions.some(f => !f.isHttpTrigger) || pythonUtils.isV2Plus(projectLanguage, projectLanguageModel) || requiresDurableStorage) {
+        const wizardContext: IAzureWebJobsStorageWizardContext = Object.assign(context, { projectPath });
+        const wizard: AzureWizard<IAzureWebJobsStorageWizardContext> = new AzureWizard(wizardContext, {
+            promptSteps: [new AzureWebJobsStoragePromptStep({ suppressSkipForNow: true })],
+            executeSteps: [new AzureWebJobsStorageExecuteStep()]
+        });
+        await wizard.prompt();
+        await wizard.execute();
     }
 }
 

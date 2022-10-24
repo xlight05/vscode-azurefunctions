@@ -18,7 +18,7 @@ export class SqlServerPasswordAuthStep<T extends ISqlDatabaseConnectionWizardCon
             const entryOne: string = (await context.ui.showInputBox({
                 prompt: localize('sqlServerPasswordPrompt', 'Enter an admin password for the SQL server.'),
                 password: true,
-                validateInput: (value: string | undefined) => this.validateInput(context, value)
+                validateInput: (value: string | undefined) => this._validateInput(context, value)
             })).trim();
 
             if (this._suppressPasswordConfirm) {
@@ -29,7 +29,7 @@ export class SqlServerPasswordAuthStep<T extends ISqlDatabaseConnectionWizardCon
             const entryTwo: string = (await context.ui.showInputBox({
                 prompt: localize('sqlServerPasswordConfirm', 'Enter your admin password again to confirm.'),
                 password: true,
-                validateInput: (value: string | undefined) => this.validateInput(context, value)
+                validateInput: (value: string | undefined) => this._validateInput(context, value)
             })).trim();
 
             if (entryOne === entryTwo) {
@@ -47,7 +47,7 @@ export class SqlServerPasswordAuthStep<T extends ISqlDatabaseConnectionWizardCon
         return !context.newSqlAdminPassword && !!context.newSqlAdminUsername;
     }
 
-    private validateInput(context: T, password: string | undefined): string | undefined {
+    private _validateInput(context: T, password: string | undefined): string | undefined {
         const login: string = nonNullProp(context, 'newSqlAdminUsername');
         password = password ? password.trim() : '';
 

@@ -33,9 +33,6 @@ export namespace pythonUtils {
         // Verify we don't already have the dependency added
         for (let line of lines) {
             line = line.trim();
-            if (!line || line[0] === '#') {
-                continue;
-            }
             if (line === dependency) {
                 return;
             }
