@@ -25,7 +25,7 @@ export class SqlDatabaseListStep<T extends ISqlDatabaseConnectionWizardContext> 
         const serverName: string = nonNullValue(context.sqlServer.name);
 
         const quickPickOptions: IAzureQuickPickOptions = { placeHolder: 'Select a SQL database.' };
-        const picksTask: Promise<IAzureQuickPickItem<Database | undefined>[]> = this.getQuickPicks(uiUtils.listAllIterator(client.databases.listByServer(rgName, serverName)));
+        const picksTask: Promise<IAzureQuickPickItem<Database | undefined>[]> = this._getQuickPicks(uiUtils.listAllIterator(client.databases.listByServer(rgName, serverName)));
 
         const result: Database | undefined = (await context.ui.showQuickPick(picksTask, quickPickOptions)).data;
         context.sqlDatabase = result;
@@ -49,7 +49,7 @@ export class SqlDatabaseListStep<T extends ISqlDatabaseConnectionWizardContext> 
         return !context.sqlDatabase && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 
-    private async getQuickPicks(dbTask: Promise<Server[]>): Promise<IAzureQuickPickItem<Database | undefined>[]> {
+    private async _getQuickPicks(dbTask: Promise<Server[]>): Promise<IAzureQuickPickItem<Database | undefined>[]> {
         const picks: IAzureQuickPickItem<Server | undefined>[] = [{
             label: localize('newSqlDatabase', '$(plus) Create new SQL database'),
             description: '',
