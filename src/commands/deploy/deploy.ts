@@ -149,8 +149,7 @@ async function updateWorkerProcessTo64BitIfRequired(context: IDeployContext, sit
         use32BitWorkerProcess: false
     };
 
-    // Todo: Change to only 64 bit for netherite, not sql
-    if (durableStorageType) {
+    if (durableStorageType === DurableBackend.Netherite) {
         await client.updateConfiguration(config);
         return;
     }

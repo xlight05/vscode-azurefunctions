@@ -9,7 +9,7 @@ import { LocationListStep } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardExecuteStep, parseError } from '@microsoft/vscode-azext-utils';
 import { AppResource } from '@microsoft/vscode-azext-utils/hostapi';
 import { Progress } from 'vscode';
-import { ConnectionKey, contentConnectionStringKey, contentShareKey, extensionVersionKey, ProjectLanguage, runFromPackageKey, webProvider } from '../../constants';
+import { ConnectionKey, contentConnectionStringKey, contentShareKey, DurableBackend, extensionVersionKey, ProjectLanguage, runFromPackageKey, webProvider } from '../../constants';
 import { ext } from '../../extensionVariables';
 import { getLocalConnectionString } from '../../funcConfig/local.settings';
 import { FuncVersion, getMajorVersion } from '../../FuncVersion';
@@ -175,9 +175,8 @@ export class FunctionAppCreateStep extends AzureWizardExecuteStep<IFunctionAppWi
 
         newSiteConfig.appSettings = appSettings;
 
-        // Todo: change 64bit to only netherite
-        if (context.durableStorageType) {
-            newSiteConfig.use32BitWorkerProcess = false;  // Durable Storage requires 64 bit
+        if (context.durableStorageType === DurableBackend.Netherite) {
+            newSiteConfig.use32BitWorkerProcess = false;
         }
 
         return newSiteConfig;
