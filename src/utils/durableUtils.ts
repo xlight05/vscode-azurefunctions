@@ -141,7 +141,9 @@ export namespace durableUtils {
         return new Promise((resolve) => {
             xml2js.parseString(csProjContents, { explicitArray: false }, (err: any, result: any): void => {
                 if (result && !err) {
-                    const packageReferences = result?.['Project']?.['ItemGroup']?.[0]?.PackageReference ?? [];
+                    let packageReferences = result?.['Project']?.['ItemGroup']?.[0]?.PackageReference ?? [];
+                    packageReferences = (packageReferences instanceof Array) ? packageReferences : [packageReferences];
+
                     for (const packageRef of packageReferences) {
                         if (packageRef['$'] && packageRef['$']['Include']) {
                             if (packageRef['$']['Include'] === dotnetDfBasePackage) {
@@ -164,14 +166,12 @@ export namespace durableUtils {
 
         const contents: string = await AzExtFsExtra.readFile(requirementsPath);
         const lines: string[] = contents.split('\n');
-
         for (let line of lines) {
             line = line.trim();
             if (line === pythonDfPackage) {
                 return true;
             }
         }
-
         return false;
     }
 
