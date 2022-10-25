@@ -7,7 +7,7 @@ import { StringDictionary } from "@azure/arm-appservice";
 import { AppSettingsTreeItem, confirmOverwriteSettings, IAppSettingsClient } from "@microsoft/vscode-azext-azureappservice";
 import { AzExtFsExtra, IActionContext } from "@microsoft/vscode-azext-utils";
 import * as vscode from 'vscode';
-import { functionFilter, localSettingsFileName } from "../../constants";
+import { functionFilter, localSettingsFileName, localStorageEmulatorConnectionString } from "../../constants";
 import { ext } from "../../extensionVariables";
 import { ILocalSettingsJson } from "../../funcConfig/local.settings";
 import { localize, viewOutput } from "../../localize";
@@ -53,6 +53,12 @@ export async function uploadAppSettingsInternal(context: IActionContext, client:
         }
 
         const excludedAppSettings: string[] = [];
+        // Don't want AzureWebJobsStorage to be overwritten in this case as it should point at a live resource: https://github.com/microsoft/vscode-azurefunctions/issues/3298
+        if (localSettings.Values["AzureWebJobsStorage"] === localStorageEmulatorConnectionString) {
+            delete localSettings.Values?.["AzureWebJobsStorage"];
+            excludedAppSettings.push("AzureWebJobsStorage");
+        }
+
         if (exclude) {
             Object.keys(localSettings.Values).forEach((settingName) => {
                 if (exclude.some((exclusion) => typeof exclusion === 'string' ? settingName.toLowerCase() === exclusion.toLowerCase() : settingName.match(new RegExp(exclusion, 'i')))) {

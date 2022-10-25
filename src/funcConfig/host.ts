@@ -28,6 +28,10 @@ export interface IHostJsonV2 {
             routePrefix?: string;
         };
     };
+    concurrency?: {
+        dynamicConcurrencyEnabled: boolean;
+        snapshotPersistenceEnabled: boolean;
+    };
 }
 
 export type IDurableTaskJson = IStorageTaskJson | INetheriteTaskJson | ISqlTaskJson;

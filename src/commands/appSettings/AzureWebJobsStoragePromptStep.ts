@@ -48,12 +48,14 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
     }
 
     public shouldPrompt(context: T & { eventHubConnectionType?: ConnectionTypeValues, sqlDbConnectionType?: ConnectionTypeValues }): boolean {
-        if (context.eventHubConnectionType) {
+        if (!!context.storageAccount || !!context.newStorageAccountName) {
+            context.azureWebJobsStorageType = ConnectionType.Azure;  // Only should prompt if no storage account was selected
+        } else if (context.eventHubConnectionType) {
             context.azureWebJobsStorageType = context.eventHubConnectionType;
-        }
-        if (context.sqlDbConnectionType === ConnectionType.Azure || context.sqlDbConnectionType === ConnectionType.None) {
+        } else if (context.sqlDbConnectionType === ConnectionType.Azure || context.sqlDbConnectionType === ConnectionType.None) {
             context.azureWebJobsStorageType = context.sqlDbConnectionType;
         }
+
         return !context.azureWebJobsStorageType;
     }
 
