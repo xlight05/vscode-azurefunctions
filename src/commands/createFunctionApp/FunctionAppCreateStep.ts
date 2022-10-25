@@ -175,6 +175,7 @@ export class FunctionAppCreateStep extends AzureWizardExecuteStep<IFunctionAppWi
 
         newSiteConfig.appSettings = appSettings;
 
+        // Todo: change 64bit to only netherite
         if (context.durableStorageType) {
             newSiteConfig.use32BitWorkerProcess = false;  // Durable Storage requires 64 bit
         }
