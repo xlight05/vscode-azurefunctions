@@ -5,7 +5,7 @@
 
 import { Database, SqlManagementClient } from '@azure/arm-sql';
 import { ext } from '@microsoft/vscode-azext-azureappservice/out/src/extensionVariables';
-import { ILocationWizardContext, LocationListStep } from '@microsoft/vscode-azext-azureutils';
+import { ILocationWizardContext, LocationListStep, parseAzureResourceId } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardExecuteStep, ISubscriptionContext, nonNullValue } from '@microsoft/vscode-azext-utils';
 import { Progress } from 'vscode';
 import { ConnectionType } from '../../../../constants';
@@ -18,8 +18,8 @@ export class SqlDatabaseCreateStep<T extends ISqlDatabaseConnectionWizardContext
 
     public async execute(context: T & ISubscriptionContext, progress: Progress<{ message?: string; increment?: number }>): Promise<void> {
         const client: SqlManagementClient = await createSqlClient(<T & ISubscriptionContext>context);
-        const rgName: string = nonNullValue(context.resourceGroup?.name);
         const serverName: string = nonNullValue(context.sqlServer?.name);
+        const rgName: string = parseAzureResourceId(nonNullValue(context.sqlServer?.id)).resourceGroup;
         const newDatabaseName: string = nonNullValue(context.newSqlDatabaseName);
 
         const creating: string = localize('creatingSqlServer', 'Creating new SQL database "{0}"...', newDatabaseName);
@@ -43,6 +43,6 @@ export class SqlDatabaseCreateStep<T extends ISqlDatabaseConnectionWizardContext
     }
 
     public shouldExecute(context: T): boolean {
-        return !!context.resourceGroup && !!context.newSqlDatabaseName && LocationListStep.hasLocation(<ILocationWizardContext>context) && context.sqlDbConnectionType === ConnectionType.Azure;
+        return !!context.sqlServer && !!context.newSqlDatabaseName && LocationListStep.hasLocation(<ILocationWizardContext>context) && context.sqlDbConnectionType === ConnectionType.Azure;
     }
 }

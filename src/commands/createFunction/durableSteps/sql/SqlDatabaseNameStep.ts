@@ -4,7 +4,7 @@
  *--------------------------------------------------------------------------------------------*/
 
 import { Database, SqlManagementClient } from '@azure/arm-sql';
-import { uiUtils } from '@microsoft/vscode-azext-azureutils';
+import { parseAzureResourceId, uiUtils } from '@microsoft/vscode-azext-azureutils';
 import { AzureWizardPromptStep, ISubscriptionContext, nonNullValue } from '@microsoft/vscode-azext-utils';
 import { ConnectionType } from '../../../../constants';
 import { invalidAlphanumericWithHyphens, invalidLength, localize } from '../../../../localize';
@@ -20,7 +20,7 @@ export class SqlDatabaseNameStep<T extends ISqlDatabaseConnectionWizardContext> 
         // If we have a sql server already, then we should check to make sure we don't have a name duplicate down the line
         // If we don't have a sql server yet, then that means we can just take any name that meets basic validation requirements
         if (context.sqlServer) {
-            const rgName: string = nonNullValue(context.resourceGroup?.name);
+            const rgName: string = parseAzureResourceId(nonNullValue(context.sqlServer.id)).resourceGroup;
             const serverName: string = nonNullValue(context.sqlServer?.name);
 
             const client: SqlManagementClient = await createSqlClient(<T & ISubscriptionContext>context);
