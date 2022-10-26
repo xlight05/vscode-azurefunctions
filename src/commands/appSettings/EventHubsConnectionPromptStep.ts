@@ -53,6 +53,12 @@ export class EventHubsConnectionPromptStep<T extends IEventHubsConnectionWizardC
         if (context.azureWebJobsStorageType) {
             context.eventHubConnectionType = context.azureWebJobsStorageType;
         }
+
+        // Even if we skip the prompting, we should still record the flow in telemetry
+        if (context.eventHubConnectionType) {
+            context.telemetry.properties.eventHubConnectionType = context.eventHubConnectionType;
+        }
+
         return !context.eventHubConnectionType;
     }
 

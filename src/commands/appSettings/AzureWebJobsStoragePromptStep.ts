@@ -56,6 +56,11 @@ export class AzureWebJobsStoragePromptStep<T extends IAzureWebJobsStorageWizardC
             context.azureWebJobsStorageType = context.sqlDbConnectionType;
         }
 
+        // Even if we skip the prompting, we should still record the flow in telemetry
+        if (context.azureWebJobsStorageType) {
+            context.telemetry.properties.azureWebJobsStorageType = context.azureWebJobsStorageType;
+        }
+
         return !context.azureWebJobsStorageType;
     }
 

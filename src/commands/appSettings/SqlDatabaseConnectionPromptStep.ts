@@ -61,6 +61,12 @@ export class SqlDatabaseConnectionPromptStep<T extends ISqlDatabaseConnectionWiz
         if (context.azureWebJobsStorageType) {
             context.sqlDbConnectionType = context.azureWebJobsStorageType;
         }
+
+        // Even if we skip the prompting, we should still record the flow in telemetry
+        if (context.sqlDbConnectionType) {
+            context.telemetry.properties.sqlDbConnectionType = context.sqlDbConnectionType;
+        }
+
         return !context.sqlDbConnectionType;
     }
 
